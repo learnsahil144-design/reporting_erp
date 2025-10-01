@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Reports{% endblock %}
+
+{% block content %}
+<h2>Reports Overview</h2>
+
+<!-- Team Summary -->
+<h4>Reports by Team</h4>
+<ul>
+    {% for row in reports_by_team %}
+        <li>{{ row.team }} — {{ row.total }}</li>
+    {% empty %}
+        <li>No reports yet.</li>
+    {% endfor %}
+</ul>
+
+<!-- User Summary Table -->
+<h4>📊 User Comparison (Table)</h4>
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Total Reports</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in reports_by_user %}
+        <tr>
+            <td>{{ row.user__username }}</td>
+            <td>{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Chart -->
+<h4>📈 User Comparison (Chart)</h4>
+<canvas id="userChart" style="max-height:400px;"></canvas>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('userChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for row in reports_by_user %}"{{ row.user__username }}",{% endfor %}],
+            datasets: [{
+                label: 'Reports Submitted',
+                data: [{% for row in reports_by_user %}{{ row.total }},{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Reports per User' }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+
+<!-- All Reports -->
+<h4>📄 All Reports</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Team</th>
+            <th>Date</th>
+            <th>Tasks</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.user.username }}</td>
+            <td>{{ report.user.team }}</td>
+            <td>{{ report.custom_date }}</td>
+            <td>{{ report.tasks }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No reports available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

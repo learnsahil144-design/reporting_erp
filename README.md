@@ -1,6 +1,3 @@
-# reporting_erp
+# Django Reporting System
 
-/login
-/report
-/admin
-/admin-reports/
+A simple reporting dashboard built with Django featuring user submissions, team-based summaries, and admin analytics with Chart.js visualization.

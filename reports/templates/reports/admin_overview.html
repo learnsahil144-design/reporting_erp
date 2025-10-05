@@ -5,11 +5,39 @@
 {% block content %}
 <h2>Reports Overview</h2>
 
+<!-- ✅ Filter Form -->
+<form method="get" class="mb-3">
+    <label for="team">Team:</label>
+    <select name="team" id="team" onchange="this.form.submit()">
+        <option value="">All Teams</option>
+        {% for team in teams %}
+            <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>
+                {{ team|capfirst }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <label for="user">User:</label>
+    <select name="user" id="user" onchange="this.form.submit()">
+        <option value="">All Users</option>
+        {% for u in users %}
+            <option value="{{ u.username }}" {% if selected_user == u.username %}selected{% endif %}>
+                {{ u.username }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <label for="date">Date:</label>
+    <input type="date" name="date" id="date" value="{{ request.GET.date }}" onchange="this.form.submit()">
+</form>
+
+<hr>
+
 <!-- Team Summary -->
 <h4>Reports by Team</h4>
 <ul>
     {% for row in reports_by_team %}
-        <li>{{ row.team }} — {{ row.total }}</li>
+        <li>{{ row.user__team }} — {{ row.total }}</li>
     {% empty %}
         <li>No reports yet.</li>
     {% endfor %}
@@ -74,8 +102,11 @@
         <tr>
             <th>User</th>
             <th>Team</th>
-            <th>Date</th>
+            <th>Report Date (custom)</th>
+            <th>Submitted At</th>
             <th>Tasks</th>
+            <th>Notes</th>
+            <th>Status</th>
         </tr>
     </thead>
     <tbody>
@@ -83,15 +114,21 @@
         <tr>
             <td>{{ report.user.username }}</td>
             <td>{{ report.user.team }}</td>
-            <td>{{ report.custom_date }}</td>
+            <td>{{ report.custom_date|default:"—" }}</td>
+            <td>{{ report.created_at|date:"Y-m-d H:i" }}</td>
             <td>{{ report.tasks }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">No reports available.</td>
+            <td>{{ report.notes }}</td>
+            <td>
+                {% if report.is_late_submission %}
+                    <span style="color: red; font-weight: bold;">Late</span>
+                {% else %}
+                    <span style="color: green; font-weight: bold;">On Time</span>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
 
 {% endblock %}

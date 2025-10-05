@@ -76,7 +76,10 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # Global static folder
+STATIC_ROOT = BASE_DIR / "staticfiles"    # For collectstatic (production)
+
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Report
+from .models import Report, User   # ✅ make sure User is imported
 
 class ReportForm(forms.ModelForm):
     custom_date = forms.DateField(
@@ -15,7 +15,6 @@ class ReportForm(forms.ModelForm):
 
     class Meta:
         model = Report
-        fields = ["custom_date"]
         fields = ["custom_date", "notes"]
 
     def __init__(self, *args, **kwargs):
@@ -49,10 +48,26 @@ class ReportForm(forms.ModelForm):
     def save(self, commit=True):
         report = super().save(commit=False)
         report.user = self.user
+
         # Collect all dynamic task fields into the tasks JSONField
-        tasks_data = {k: v for k, v in self.cleaned_data.items() if k != "custom_date"}
+        tasks_data = {k: v for k, v in self.cleaned_data.items() if k not in ["custom_date", "notes"]}
         report.tasks = tasks_data
+
         report.notes = self.cleaned_data.get("notes", "")  # ✅ save notes
         if commit:
             report.save()
         return report
+
+
+# ✅ New form for admin filtering
+class ReportFilterForm(forms.Form):
+    team = forms.ChoiceField(
+        choices=[("", "All Teams")] + list(User.TEAM_CHOICES),
+        required=False,
+        label="Select Team"
+    )
+    user = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        label="Select User"
+    )

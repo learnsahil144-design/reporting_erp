@@ -13,11 +13,26 @@ class User(AbstractUser):
 
 class Report(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
-    custom_date = models.DateField(blank=True, null=True)
+    
+    # ✅ Auto date (when submitted)
+    date = models.DateField(auto_now_add=True, help_text="Auto submission date")
+    
+    # ✅ Custom date (optional, if user missed the actual day)
+    custom_date = models.DateField(blank=True, null=True, help_text="The date this report is for")
+    
     tasks = models.JSONField()
     notes = models.TextField(blank=True, null=True)
+    
+    # ✅ Exact timestamp (more precise than 'date')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.date}"
+        return f"{self.user.username} - {self.custom_date or self.date}"
+
+    @property
+    def is_late_submission(self):
+        """Check if user submitted report for a past date"""
+        if self.custom_date:
+            return self.custom_date < self.date
+        return False
+

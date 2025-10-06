@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: reporting_app
+    command: python manage.py runserver 0.0.0.0:8900
+    ports:
+      - "8900:8900"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1

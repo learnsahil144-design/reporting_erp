@@ -5,31 +5,39 @@
 {% block content %}
 <h2>Reports Overview</h2>
 
-<!-- ✅ Filter Form -->
-<form method="get" class="mb-3">
-    <label for="team">Team:</label>
-    <select name="team" id="team" onchange="this.form.submit()">
-        <option value="">All Teams</option>
-        {% for team in teams %}
-            <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>
-                {{ team|capfirst }}
-            </option>
-        {% endfor %}
-    </select>
+<!-- ✅ Export + Filter -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <label for="team">Team:</label>
+        <select name="team" id="team" onchange="this.form.submit()" class="form-select form-select-sm w-auto">
+            <option value="">All Teams</option>
+            {% for team in teams %}
+                <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>
+                    {{ team|capfirst }}
+                </option>
+            {% endfor %}
+        </select>
 
-    <label for="user">User:</label>
-    <select name="user" id="user" onchange="this.form.submit()">
-        <option value="">All Users</option>
-        {% for u in users %}
-            <option value="{{ u.username }}" {% if selected_user == u.username %}selected{% endif %}>
-                {{ u.username }}
-            </option>
-        {% endfor %}
-    </select>
+        <label for="user">User:</label>
+        <select name="user" id="user" onchange="this.form.submit()" class="form-select form-select-sm w-auto">
+            <option value="">All Users</option>
+            {% for u in users %}
+                <option value="{{ u.username }}" {% if selected_user == u.username %}selected{% endif %}>
+                    {{ u.username }}
+                </option>
+            {% endfor %}
+        </select>
 
-    <label for="date">Date:</label>
-    <input type="date" name="date" id="date" value="{{ request.GET.date }}" onchange="this.form.submit()">
-</form>
+        <label for="date">Date:</label>
+        <input type="date" name="date" id="date" value="{{ request.GET.date }}" onchange="this.form.submit()" class="form-control form-control-sm w-auto">
+    </form>
+
+    <!-- ✅ Export Button -->
+    <a href="{% url 'export_reports_excel' %}?team={{ selected_team }}&user={{ selected_user }}&date={{ request.GET.date }}" class="btn btn-success btn-sm">
+        Export to Excel
+    </a>
+
+</div>
 
 <hr>
 
@@ -66,7 +74,6 @@
 <h4>📈 User Comparison (Chart)</h4>
 <canvas id="userChart" style="max-height:400px;"></canvas>
 
-<!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('userChart').getContext('2d');
@@ -84,25 +91,21 @@
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false },
-                title: { display: true, text: 'Reports per User' }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
         }
     });
 </script>
 
-<!-- All Reports -->
+<!-- ✅ All Reports Table -->
 <h4>📄 All Reports</h4>
-<table class="table table-bordered">
-    <thead>
+<table class="table table-bordered table-hover align-middle text-center">
+    <thead class="table-dark">
         <tr>
             <th>User</th>
             <th>Team</th>
-            <th>Report Date (custom)</th>
+            <th>Shift</th> <!-- ✅ new -->
+            <th>Report Date</th>
             <th>Submitted At</th>
             <th>Tasks</th>
             <th>Notes</th>
@@ -113,22 +116,27 @@
         {% for report in reports %}
         <tr>
             <td>{{ report.user.username }}</td>
-            <td>{{ report.user.team }}</td>
+            <td>{{ report.user.team|capfirst }}</td>
+            <td>{{ report.get_shift_display }}</td> <!-- ✅ show readable shift -->
             <td>{{ report.custom_date|default:"—" }}</td>
             <td>{{ report.created_at|date:"Y-m-d H:i" }}</td>
-            <td>{{ report.tasks }}</td>
-            <td>{{ report.notes }}</td>
+            <td>
+                {% for k, v in report.tasks.items %}
+                    <div>{{ k|title }}: <b>{{ v }}</b></div>
+                {% endfor %}
+            </td>
+            <td>{{ report.notes|default:"—" }}</td>
             <td>
                 {% if report.is_late_submission %}
-                    <span style="color: red; font-weight: bold;">Late</span>
+                    <span class="text-danger fw-bold">Late</span>
                 {% else %}
-                    <span style="color: green; font-weight: bold;">On Time</span>
+                    <span class="text-success fw-bold">On Time</span>
                 {% endif %}
             </td>
         </tr>
+        {% empty %}
+        <tr><td colspan="8">No reports found.</td></tr>
         {% endfor %}
     </tbody>
 </table>
-
-
 {% endblock %}

@@ -48,3 +48,18 @@ class Report(models.Model):
         if self.custom_date:
             return self.custom_date < self.date
         return False
+
+# ------------------------------
+# ✅ Admin Notices
+# ------------------------------
+class AdminNotice(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title

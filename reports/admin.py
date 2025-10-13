@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Report
+from .models import User, Report, AdminNotice
 
+# ------------------------------
+# ✅ Custom User Admin
+# ------------------------------
 class CustomUserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Team Info', {'fields': ('team', 'contact')}),
@@ -11,6 +14,9 @@ class CustomUserAdmin(BaseUserAdmin):
     search_fields = ('username', 'email')
 
 
+# ------------------------------
+# ✅ Report Admin
+# ------------------------------
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
     list_display = ('user', 'get_team', 'custom_date', 'created_at')
@@ -19,8 +25,22 @@ class ReportAdmin(admin.ModelAdmin):
     ordering = ('-custom_date',)
 
     def get_team(self, obj):
-        return obj.user.team  # 👈 pulling team from User model
-    get_team.short_description = 'Team'  # display column header
+        return obj.user.team
+    get_team.short_description = 'Team'
 
 
+# ------------------------------
+# ✅ AdminNotice Admin
+# ------------------------------
+@admin.register(AdminNotice)
+class AdminNoticeAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_by', 'created_at')
+    list_filter = ('created_at', 'created_by')
+    search_fields = ('title', 'content')
+    ordering = ('-created_at',)
+
+
+# ------------------------------
+# ✅ Register User
+# ------------------------------
 admin.site.register(User, CustomUserAdmin)

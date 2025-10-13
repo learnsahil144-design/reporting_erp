@@ -5,10 +5,12 @@ from django.db.models import Count
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-from .forms import ReportForm
-from .models import Report, User
 from collections import defaultdict
 import pandas as pd
+from datetime import date
+from .forms import ReportForm
+from .models import Report, User, AdminNotice
+import json
 
 # ------------------------------
 # 📝 USER REPORT SUBMISSION
@@ -26,8 +28,20 @@ def submit_report(request):
             return redirect("submit_report")
     else:
         form = ReportForm(user=request.user)
-    return render(request, "reports/submit_report.html", {"form": form})
 
+    # Fetch published notices
+    notices = AdminNotice.objects.all().order_by('-created_at')
+
+    # Get dates the user has submitted reports
+    reports = Report.objects.filter(user=request.user)
+    submission_dates = [r.custom_date.strftime("%Y-%m-%d") for r in reports if r.custom_date]
+
+    context = {
+        "form": form,
+        "notices": notices,
+        "submission_dates": json.dumps(submission_dates),  # ✅ Make JSON string
+    }
+    return render(request, "reports/submit_report.html", context)
 
 # ------------------------------
 # 🖥️ ADMIN REPORT OVERVIEW
@@ -40,7 +54,6 @@ def admin_reports_overview(request):
 
     reports = Report.objects.select_related("user").all()
 
-    # ✅ Filtering
     if team_filter:
         reports = reports.filter(user__team=team_filter)
     if user_filter:
@@ -48,7 +61,6 @@ def admin_reports_overview(request):
     if date_filter:
         reports = reports.filter(custom_date=date_filter)
 
-    # ✅ Combine multiple reports per user per day per shift
     combined_reports = {}
     for r in reports:
         key = (r.user.id, r.custom_date or r.date, r.shift)
@@ -63,19 +75,14 @@ def admin_reports_overview(request):
                 "notes": [],
                 "is_late_submission": r.is_late_submission,
             }
-
-        # Merge numeric tasks
         for k, v in (r.tasks or {}).items():
             try:
                 combined_reports[key]["tasks"][k] += int(v)
             except (TypeError, ValueError):
                 pass
-
-        # Combine notes
         if r.notes:
             combined_reports[key]["notes"].append(r.notes)
 
-    # ✅ Format task keys
     for key in combined_reports:
         formatted_tasks = {}
         for k, v in combined_reports[key]["tasks"].items():
@@ -85,14 +92,12 @@ def admin_reports_overview(request):
 
     combined_reports = list(combined_reports.values())
 
-    # ✅ Aggregations for charts
     reports_by_team = (
         reports.values("user__team")
         .distinct()
         .annotate(total=Count("custom_date"))
         .order_by("-total")
     )
-
     reports_by_user = (
         reports.values("user__username")
         .distinct()
@@ -100,7 +105,6 @@ def admin_reports_overview(request):
         .order_by("-total")
     )
 
-    # ✅ Dropdown lists
     teams = User.objects.values_list("team", flat=True).distinct()
     users = User.objects.all()
 
@@ -120,7 +124,7 @@ def admin_reports_overview(request):
 
 
 # ------------------------------
-# 📝 EXPORT REPORTS TO EXCEL (with date range support)
+# 🧾 EXPORT REPORTS TO EXCEL
 # ------------------------------
 @staff_member_required
 def export_reports_excel(request):
@@ -131,7 +135,6 @@ def export_reports_excel(request):
 
     reports = Report.objects.select_related("user").all()
 
-    # Apply filters
     if start_date and end_date:
         reports = reports.filter(custom_date__range=[start_date, end_date])
     if team_filter:
@@ -151,19 +154,14 @@ def export_reports_excel(request):
                 "tasks": defaultdict(int),
                 "notes": [],
             }
-
-        # Merge numeric tasks safely
         for k, v in (r.tasks or {}).items():
             try:
                 combined_reports[key]["tasks"][k] += int(v)
             except (TypeError, ValueError):
                 combined_reports[key]["tasks"][k] = v
-
-        # Combine notes
         if r.notes:
             combined_reports[key]["notes"].append(r.notes)
 
-    # Flatten tasks and notes for Excel
     export_data = []
     for rep in combined_reports.values():
         data = {
@@ -177,7 +175,6 @@ def export_reports_excel(request):
         export_data.append(data)
 
     df = pd.DataFrame(export_data)
-
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
@@ -185,43 +182,49 @@ def export_reports_excel(request):
     df.to_excel(response, index=False)
     return response
 
+
 # ------------------------------
-# 👤 USER REPORT DETAIL (for admin dashboard)
+# 👤 USER REPORT DETAIL
 # ------------------------------
 @staff_member_required
 def user_report_detail(request, username):
     user = get_object_or_404(User, username=username)
-
     reports = Report.objects.filter(user=user).order_by("custom_date")
 
-    # Combine multiple reports per day per shift
     combined_reports = {}
-    task_totals = defaultdict(int)  # ✅ Aggregate all tasks for graph
+    task_totals = defaultdict(int)
+    daily_summary = defaultdict(int)
+    monthly_summary = defaultdict(int)
+    yearly_summary = defaultdict(int)
 
     for r in reports:
-        key = (r.custom_date or r.date, r.shift)
+        date_key = r.custom_date or r.date
+        key = (date_key, r.shift)
         if key not in combined_reports:
             combined_reports[key] = {
-                "custom_date": r.custom_date or r.date,
+                "custom_date": date_key,
                 "shift": r.get_shift_display(),
                 "tasks": defaultdict(int),
                 "notes": [],
                 "is_late_submission": r.is_late_submission,
             }
 
-        # Merge numeric tasks
         for k, v in (r.tasks or {}).items():
             try:
                 combined_reports[key]["tasks"][k] += int(v)
-                task_totals[k] += int(v)  # Add to total for graph
+                task_totals[k] += int(v)
+                daily_summary[date_key] += int(v)
+                if r.custom_date:
+                    month = r.custom_date.strftime("%b %Y")
+                    year = r.custom_date.year
+                    monthly_summary[month] += int(v)
+                    yearly_summary[year] += int(v)
             except (TypeError, ValueError):
-                combined_reports[key]["tasks"][k] = v
+                continue
 
-        # Combine notes
         if r.notes:
             combined_reports[key]["notes"].append(r.notes)
 
-    # Format task keys for display
     for key in combined_reports:
         formatted_tasks = {}
         for k, v in combined_reports[key]["tasks"].items():
@@ -229,24 +232,13 @@ def user_report_detail(request, username):
             formatted_tasks[formatted_key] = v
         combined_reports[key]["tasks"] = formatted_tasks
 
-    combined_reports_list = list(combined_reports.values())
-
-    # Monthly & yearly aggregation for charts
-    monthly_summary = defaultdict(int)
-    yearly_summary = defaultdict(int)
-    for r in reports:
-        if r.custom_date:
-            month = r.custom_date.strftime("%b %Y")
-            year = r.custom_date.year
-            monthly_summary[month] += 1
-            yearly_summary[year] += 1
-
     context = {
         "user": user,
-        "reports": combined_reports_list,
+        "reports": list(combined_reports.values()),
+        "task_totals": dict((k.replace("_", " ").title(), v) for k, v in task_totals.items()),
+        "daily_summary": {str(k): v for k, v in sorted(daily_summary.items())},
         "monthly_summary": dict(monthly_summary),
         "yearly_summary": dict(yearly_summary),
-        "task_totals": dict((k.replace("_", " ").title(), v) for k, v in task_totals.items()),  # ✅ Pass to template
     }
 
     return render(request, "reports/user_detail.html", context)

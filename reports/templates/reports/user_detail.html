@@ -6,12 +6,11 @@
 {% block content %}
 <div class="container mt-3">
   <h2>📊 {{ user.username|capfirst }}'s Report Overview</h2>
-
   <hr>
 
-  <!-- Total Reports Table -->
-  <h4>Total Reports</h4>
-  <table class="table table-sm table-bordered">
+  <!-- Report Table -->
+  <h4>All Reports</h4>
+  <table class="table table-sm table-bordered" id="reportTable">
     <thead>
       <tr>
         <th>Date</th>
@@ -22,57 +21,76 @@
       </tr>
     </thead>
     <tbody>
-    {% for report in reports %}
-        <tr>
+      {% for report in reports %}
+      <tr {% if forloop.counter > 10 %}class="extra-row d-none"{% endif %}>
         <td>{{ report.custom_date|default:"—" }}</td>
         <td>{{ report.shift }}</td>
         <td>
-            {% if report.tasks %}
+          {% if report.tasks %}
             {% for k, v in report.tasks.items %}
-                <div>{{ k }}: <strong>{{ v }}</strong></div>
+              <div>{{ k }}: <strong>{{ v }}</strong></div>
             {% endfor %}
-            {% else %}
-            —
-            {% endif %}
+          {% else %}—{% endif %}
         </td>
         <td>{{ report.notes|join:" | "|default:"—" }}</td>
         <td>
-            {% if report.is_late_submission %}
+          {% if report.is_late_submission %}
             <span class="text-danger">Late</span>
-            {% else %}
+          {% else %}
             <span class="text-success">On Time</span>
-            {% endif %}
+          {% endif %}
         </td>
-        </tr>
-    {% empty %}
-        <tr><td colspan="5">No reports found.</td></tr>
-    {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">No reports found.</td></tr>
+      {% endfor %}
     </tbody>
   </table>
 
+  {% if reports|length > 10 %}
+  <div class="text-center mb-3">
+    <button id="toggleBtn" class="btn btn-outline-primary btn-sm">Show More</button>
+  </div>
+  {% endif %}
+
   <hr>
 
-  <!-- Monthly Reports Chart -->
-  <h4>Monthly Report Summary</h4>
-  <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <canvas id="monthlyChart" height="120"></canvas>
+  <!-- Charts -->
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <h4>📅 Daily Task Comparison</h4>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <canvas id="dailyChart" height="120"></canvas>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Yearly Reports Chart -->
-  <h4>Yearly Report Summary</h4>
-  <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <canvas id="yearlyChart" height="120"></canvas>
+    <div class="col-md-6 mb-4">
+      <h4>📈 Monthly Summary</h4>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <canvas id="monthlyChart" height="120"></canvas>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Task Completion Chart -->
-  <h4>Task Completion Overview</h4>
-  <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <canvas id="taskChart" height="120"></canvas>
+    <div class="col-md-6 mb-4">
+      <h4>📆 Yearly Summary</h4>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <canvas id="yearlyChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12 mb-4">
+      <h4>🧩 Task Totals</h4>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <canvas id="taskChart" height="120"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -80,73 +98,121 @@
 <!-- ================= CHART.JS ================= -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // ---------- Monthly Chart ----------
-  const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-  new Chart(monthlyCtx, {
-    type: 'bar',
-    data: {
-      labels: [{% for month in monthly_summary.keys %}'{{ month }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-      datasets: [{
-        label: 'Reports per Month',
-        data: [{% for count in monthly_summary.values %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        borderColor: 'rgba(75, 192, 192, 1)',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-      plugins: { legend: { display: false }, title: { display: true, text: 'Monthly Report Summary', font: { size: 16 } } }
-    }
+  // ---------- Show More / Show Less ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('toggleBtn');
+    if (!btn) return;
+
+    let expanded = false;
+    btn.addEventListener('click', () => {
+      const rows = document.querySelectorAll('#reportTable .extra-row');
+      rows.forEach(r => r.classList.toggle('d-none'));
+      expanded = !expanded;
+      btn.textContent = expanded ? 'Show Less' : 'Show More';
+    });
   });
 
-  // ---------- Yearly Chart ----------
-  const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
-  new Chart(yearlyCtx, {
-    type: 'bar',
-    data: {
-      labels: [{% for year in yearly_summary.keys %}'{{ year }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-      datasets: [{
-        label: 'Reports per Year',
-        data: [{% for count in yearly_summary.values %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-        backgroundColor: 'rgba(255, 159, 64, 0.5)',
-        borderColor: 'rgba(255, 159, 64, 1)',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-      plugins: { legend: { display: false }, title: { display: true, text: 'Yearly Report Summary', font: { size: 16 } } }
-    }
-  });
-
-  // ---------- Task Completion Chart ----------
+  // Parse safely — Django dicts → JSON objects
+  const dailyData = {{ daily_summary|safe }};
+  const monthlyData = {{ monthly_summary|safe }};
+  const yearlyData = {{ yearly_summary|safe }};
   const taskData = {{ task_totals|safe }};
-  const taskLabels = Object.keys(taskData);
-  const taskValues = Object.values(taskData);
-  const taskCtx = document.getElementById('taskChart').getContext('2d');
-  new Chart(taskCtx, {
-    type: 'bar',
-    data: {
-      labels: taskLabels,
-      datasets: [{
-        label: 'Tasks Completed',
-        data: taskValues,
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-      plugins: { legend: { display: false }, title: { display: true, text: 'Task Completion Overview', font: { size: 16 } } }
-    }
-  });
+
+  // ---------- DAILY CHART ----------
+  if (Object.keys(dailyData).length > 0) {
+    const ctxDaily = document.getElementById("dailyChart").getContext("2d");
+    new Chart(ctxDaily, {
+      type: "line",
+      data: {
+        labels: Object.keys(dailyData),
+        datasets: [{
+          label: "Total Tasks per Day",
+          data: Object.values(dailyData),
+          borderColor: "rgba(54, 162, 235, 1)",
+          backgroundColor: "rgba(54, 162, 235, 0.3)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  // ---------- MONTHLY CHART ----------
+  if (Object.keys(monthlyData).length > 0) {
+    const ctxMonthly = document.getElementById("monthlyChart").getContext("2d");
+    new Chart(ctxMonthly, {
+      type: "bar",
+      data: {
+        labels: Object.keys(monthlyData),
+        datasets: [{
+          label: "Total Tasks per Month",
+          data: Object.values(monthlyData),
+          backgroundColor: "rgba(75, 192, 192, 0.5)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // ---------- YEARLY CHART ----------
+  if (Object.keys(yearlyData).length > 0) {
+    const ctxYearly = document.getElementById("yearlyChart").getContext("2d");
+    new Chart(ctxYearly, {
+      type: "bar",
+      data: {
+        labels: Object.keys(yearlyData),
+        datasets: [{
+          label: "Total Tasks per Year",
+          data: Object.values(yearlyData),
+          backgroundColor: "rgba(255, 159, 64, 0.5)",
+          borderColor: "rgba(255, 159, 64, 1)",
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // ---------- TASK TOTALS CHART ----------
+  if (Object.keys(taskData).length > 0) {
+    const ctxTask = document.getElementById("taskChart").getContext("2d");
+    new Chart(ctxTask, {
+      type: "bar",
+      data: {
+        labels: Object.keys(taskData),
+        datasets: [{
+          label: "Total Tasks Completed",
+          data: Object.values(taskData),
+          backgroundColor: "rgba(153, 102, 255, 0.5)",
+          borderColor: "rgba(153, 102, 255, 1)",
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 </script>
 {% endblock %}

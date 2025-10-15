@@ -65,11 +65,21 @@
     <!-- ================= Calendar ================= -->
     <div class="col-md-6">
       <h5 class="mb-3">🗓️ Submission Calendar</h5>
-      <div id="calendar" class="shadow-sm p-3" style="border-radius:12px; background:white;"></div>
+
+      <div class="d-flex flex-wrap gap-3">
+        <div id="prevCalendar" class="shadow-sm p-3 flex-fill" style="border-radius:12px; background:white; min-width: 300px;"></div>
+        <div id="currCalendar" class="shadow-sm p-3 flex-fill" style="border-radius:12px; background:white; min-width: 300px;"></div>
+      </div>
+
+      <div class="mt-3">
+        <span class="badge" style="background-color:#28a745;">Submitted</span>
+        <span class="badge" style="background-color:#dc3545;">Not Submitted</span>
+      </div>
     </div>
+
   </div>
 </div>
-<p>DEBUG submission_dates: {{ submission_dates }}</p>
+
 
 <!-- ================= STYLES ================= -->
 <style>
@@ -101,42 +111,101 @@
     .btn-success:hover {
         background: #007b4f !important;
     }
+    .calendar-box {
+      background: white;
+      border-radius: 12px;
+      min-height: 450px;
+      overflow: hidden;
+    }
+
+    .fc {
+      background: white;
+      border-radius: 12px;
+    }
+
+    .fc .fc-daygrid-day-number {
+      font-size: 14px;
+    }
+
+    .fc-daygrid-event {
+      border-radius: 50% !important;
+      width: 26px !important;
+      height: 26px !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      margin: 3px auto !important;
+      font-weight: bold;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 !important;
+    }
+
 </style>
 
 <!-- Calendar JS -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const calendarEl = document.getElementById('calendar');
+<!-- ================= FullCalendar (Fixed Version) ================= -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-    let submissions = [];
-    try {
-        submissions = JSON.parse('{{ submission_dates|escapejs }}');
-    } catch(e) {
-        console.error("Failed to parse submission_dates:", e);
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const submissions = JSON.parse('{{ submission_dates|escapejs }}');
+    console.log("✅ submission_dates:", submissions);
+
+    const submittedSet = new Set(submissions);
+    const today = new Date();
+
+    function createCalendar(elementId, offset) {
+        const el = document.getElementById(elementId);
+        if (!el) return console.error("Calendar div not found:", elementId);
+
+        const monthDate = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const events = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateObj = new Date(year, month, d);
+            const dateStr = dateObj.toISOString().split("T")[0];
+
+            if (submittedSet.has(dateStr)) {
+                events.push({
+                    title: "✔",
+                    start: dateStr,
+                    color: "#28a745",
+                    textColor: "white"
+                });
+            } else if (dateObj <= today) {
+                events.push({
+                    title: "✖",
+                    start: dateStr,
+                    color: "#dc3545",
+                    textColor: "white"
+                });
+            }
+        }
+
+        console.log(`Rendering calendar: ${elementId} with ${events.length} events`);
+
+        const calendar = new FullCalendar.Calendar(el, {
+            initialView: "dayGridMonth",
+            initialDate: monthDate,
+            height: 450,
+            headerToolbar: { left: "", center: "title", right: "" },
+            events: events,
+            eventDisplay: "block",
+            fixedWeekCount: false
+        });
+
+        calendar.render();
     }
 
-    console.log("Submissions for calendar inside DOMContentLoaded:", submissions);
-
-    const events = submissions.map(date => ({
-        title: 'Submitted',
-        start: date,
-        display: 'background',
-        backgroundColor: '#28a74533',
-        borderColor: '#28a745'
-    }));
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        height: 500,
-        selectable: false,
-        headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
-        events: events
-    });
-
-    calendar.render();
+    createCalendar("prevCalendar", -1);
+    createCalendar("currCalendar", 0);
 });
 </script>
+
 
 {% endblock %}

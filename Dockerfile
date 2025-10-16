@@ -12,15 +12,15 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Django
+# Copy requirements and install Python packages
 COPY requirements.txt /app/
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . /app
 
-# Expose port (optional)
+# Expose Django port
 EXPOSE 8900
 
-# Default command to run Django server
+# Default command to run Django server on all interfaces
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8900"]

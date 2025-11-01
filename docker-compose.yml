@@ -11,3 +11,20 @@ services:
       - .:/app
     environment:
       - DEBUG=1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/reporting_db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: reporting_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reporting_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

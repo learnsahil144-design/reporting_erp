@@ -24,6 +24,8 @@ whitenoise==6.6.0
 dj-database-url==1.0.0
 django-extensions==4.1
 
+psycopg2-binary==2.9.9
+
 # For chart rendering (frontend via CDN, not needed here, but kept for clarity)
 # chart.js is loaded from CDN in templates, no need to install it.
 

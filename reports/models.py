@@ -1,6 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
+# ------------------------------
+# ✅ Custom User Model
+# ------------------------------
 class User(AbstractUser):
     TEAM_CHOICES = [
         ('content_writer', 'Content Writer'),
@@ -11,7 +15,13 @@ class User(AbstractUser):
     team = models.CharField(max_length=50, choices=TEAM_CHOICES)
     contact = models.CharField(max_length=15, blank=True, null=True)
 
+    def __str__(self):
+        return self.username
 
+
+# ------------------------------
+# ✅ Report Model
+# ------------------------------
 class Report(models.Model):
     SHIFT_CHOICES = [
         ('7_3_30', '7:00 AM – 3:30 PM'),
@@ -24,18 +34,18 @@ class Report(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    
+
     # ✅ Shift selection
     shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='9_5_30')
 
     # ✅ Dates
     date = models.DateField(auto_now_add=True, help_text="Auto submission date")
     custom_date = models.DateField(blank=True, null=True, help_text="The date this report is for")
-    
+
     # ✅ Task and notes
     tasks = models.JSONField()
     notes = models.TextField(blank=True, null=True)
-    
+
     # ✅ Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -49,8 +59,9 @@ class Report(models.Model):
             return self.custom_date < self.date
         return False
 
+
 # ------------------------------
-# ✅ Admin Notices
+# ✅ Admin Notice Model
 # ------------------------------
 class AdminNotice(models.Model):
     title = models.CharField(max_length=255)
@@ -64,9 +75,32 @@ class AdminNotice(models.Model):
     def __str__(self):
         return self.title
 
-# ==========================
-# ✅ Dynamic Field Responses (Stores user input)
-# ==========================
+
+# ------------------------------
+# ✅ DynamicField Model
+# ------------------------------
+class DynamicField(models.Model):
+    FIELD_TYPES = [
+        ('text', 'Text'),
+        ('number', 'Number'),
+        ('date', 'Date'),
+        ('textarea', 'Textarea'),
+        ('boolean', 'Checkbox'),
+    ]
+
+    team = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    label = models.CharField(max_length=150)
+    field_type = models.CharField(max_length=50, choices=FIELD_TYPES)
+    required = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.team} - {self.label}"
+
+
+# ------------------------------
+# ✅ DynamicFieldResponse Model
+# ------------------------------
 class DynamicFieldResponse(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='dynamic_responses')
     field = models.ForeignKey(DynamicField, on_delete=models.CASCADE)

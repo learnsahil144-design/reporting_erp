@@ -10,7 +10,7 @@ services:
     volumes:
       - .:/app
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - DATABASE_URL=postgres://postgres:postgres@db:5432/reporting_db
     depends_on:
       - db
@@ -25,6 +25,18 @@ services:
       POSTGRES_DB: reporting_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: reporting_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com   # login email
+      PGADMIN_DEFAULT_PASSWORD: admin          # login password
+    ports:
+      - "5050:80"   # you’ll access pgAdmin at http://localhost:5050
+    depends_on:
+      - db
 
 volumes:
   postgres_data:

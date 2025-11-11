@@ -63,3 +63,14 @@ class AdminNotice(models.Model):
 
     def __str__(self):
         return self.title
+
+# ==========================
+# ✅ Dynamic Field Responses (Stores user input)
+# ==========================
+class DynamicFieldResponse(models.Model):
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='dynamic_responses')
+    field = models.ForeignKey(DynamicField, on_delete=models.CASCADE)
+    value = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.report} - {self.field.label}: {self.value}"

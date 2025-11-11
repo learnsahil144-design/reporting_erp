@@ -1,5 +1,6 @@
 # Core Django
 Django==5.0.6
+django-environ
 
 # Database + ORM helpers
 sqlparse==0.5.0
@@ -19,7 +20,7 @@ asgiref==3.8.1
 argon2-cffi==23.1.0
 
 # For serving static files easily in dev (optional but useful)
-whitenoise==6.6.0
+whitenoise==6.7.0
 
 dj-database-url==1.0.0
 django-extensions==4.1
@@ -31,3 +32,4 @@ psycopg2-binary==2.9.9
 
 # If you use Django REST or plan future APIs (optional)
 # djangorestframework==3.15.2
+

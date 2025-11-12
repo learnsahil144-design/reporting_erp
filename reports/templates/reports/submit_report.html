@@ -35,7 +35,7 @@
         <form method="post" class="mt-3">
           {% csrf_token %}
 
-          <!-- ================= All Form Fields ================= -->
+          <!-- ================= Static Report Fields ================= -->
           {% for field in form %}
             <div class="mb-3">
               <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
@@ -48,6 +48,33 @@
               {% endfor %}
             </div>
           {% endfor %}
+
+          <!-- ================= Dynamic Fields Section ================= -->
+          {% if dynamic_fields %}
+            <h5 class="mt-4 fw-bold text-primary border-top pt-3">Additional Fields</h5>
+            {% for field in dynamic_fields %}
+              <div class="mb-3">
+                <label for="{{ field.name }}" class="form-label">
+                  {{ field.label }}{% if field.required %} *{% endif %}
+                </label>
+
+                {% if field.field_type == "text" %}
+                  <input type="text" name="{{ field.name }}" id="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == "number" %}
+                  <input type="number" name="{{ field.name }}" id="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == "date" %}
+                  <input type="date" name="{{ field.name }}" id="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == "textarea" %}
+                  <textarea name="{{ field.name }}" id="{{ field.name }}" rows="3" class="form-control" {% if field.required %}required{% endif %}></textarea>
+                {% elif field.field_type == "boolean" %}
+                  <div class="form-check">
+                    <input type="checkbox" name="{{ field.name }}" id="{{ field.name }}" class="form-check-input">
+                    <label for="{{ field.name }}" class="form-check-label">Yes / No</label>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endif %}
 
           <button type="submit" class="btn btn-success w-100 py-2 fw-semibold mt-3">
               Submit Report

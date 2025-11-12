@@ -34,19 +34,11 @@ class Report(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    # ✅ Shift selection
     shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='9_5_30')
-
-    # ✅ Dates
     date = models.DateField(auto_now_add=True, help_text="Auto submission date")
     custom_date = models.DateField(blank=True, null=True, help_text="The date this report is for")
-
-    # ✅ Task and notes
     tasks = models.JSONField()
     notes = models.TextField(blank=True, null=True)
-
-    # ✅ Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -54,7 +46,6 @@ class Report(models.Model):
 
     @property
     def is_late_submission(self):
-        """Check if user submitted report for a past date"""
         if self.custom_date:
             return self.custom_date < self.date
         return False
@@ -77,7 +68,7 @@ class AdminNotice(models.Model):
 
 
 # ------------------------------
-# ✅ DynamicField Model
+# ✅ Dynamic Field (Admin adds per team)
 # ------------------------------
 class DynamicField(models.Model):
     FIELD_TYPES = [
@@ -88,7 +79,10 @@ class DynamicField(models.Model):
         ('boolean', 'Checkbox'),
     ]
 
-    team = models.CharField(max_length=100)
+    # ✅ Reference User choices without importing (avoids circular import)
+    TEAM_CHOICES = User.TEAM_CHOICES
+
+    team = models.CharField(max_length=100, choices=TEAM_CHOICES)
     name = models.CharField(max_length=100)
     label = models.CharField(max_length=150)
     field_type = models.CharField(max_length=50, choices=FIELD_TYPES)
@@ -99,7 +93,7 @@ class DynamicField(models.Model):
 
 
 # ------------------------------
-# ✅ DynamicFieldResponse Model
+# ✅ Dynamic Field Response
 # ------------------------------
 class DynamicFieldResponse(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='dynamic_responses')

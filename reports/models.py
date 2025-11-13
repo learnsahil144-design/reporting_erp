@@ -11,6 +11,10 @@ class User(AbstractUser):
         ('graphic_designer', 'Graphic Designer'),
         ('video_editor', 'Video Editor'),
         ('social_media', 'Social Media'),
+        ('video_producer', 'Video Producer'),
+        ('reporter', 'Reporter'),
+        ('cameraman', 'Cameraman'),
+        ('marketing', 'Marketing'),
     ]
     team = models.CharField(max_length=50, choices=TEAM_CHOICES)
     contact = models.CharField(max_length=15, blank=True, null=True)
@@ -37,9 +41,23 @@ class Report(models.Model):
     shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='9_5_30')
     date = models.DateField(auto_now_add=True, help_text="Auto submission date")
     custom_date = models.DateField(blank=True, null=True, help_text="The date this report is for")
-    tasks = models.JSONField()
+
+    # ✅ Static task fields (common or known ones)
+    presenter_video = models.IntegerField(default=0, blank=True, null=True)
+    live_video = models.IntegerField(default=0, blank=True, null=True)
+    logo_video = models.IntegerField(default=0, blank=True, null=True)
+    special_work_video = models.IntegerField(default=0, blank=True, null=True)
+    reel_video = models.IntegerField(default=0, blank=True, null=True)
+    vo_video = models.IntegerField(default=0, blank=True, null=True)
+    interview_video = models.IntegerField(default=0, blank=True, null=True)
+    anchor_presenter_video = models.IntegerField(default=0, blank=True, null=True)
+
+    # ✅ Common notes field
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ✅ Keep dynamic fields as JSON too (optional)
+    tasks = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.custom_date or self.date} ({self.get_shift_display()})"
@@ -68,7 +86,7 @@ class AdminNotice(models.Model):
 
 
 # ------------------------------
-# ✅ Dynamic Field (Admin adds per team)
+# ✅ Dynamic Field (for extra fields per team)
 # ------------------------------
 class DynamicField(models.Model):
     FIELD_TYPES = [
@@ -79,7 +97,6 @@ class DynamicField(models.Model):
         ('boolean', 'Checkbox'),
     ]
 
-    # ✅ Reference User choices without importing (avoids circular import)
     TEAM_CHOICES = User.TEAM_CHOICES
 
     team = models.CharField(max_length=100, choices=TEAM_CHOICES)
@@ -93,7 +110,7 @@ class DynamicField(models.Model):
 
 
 # ------------------------------
-# ✅ Dynamic Field Response
+# ✅ Dynamic Field Response (Stores the user input)
 # ------------------------------
 class DynamicFieldResponse(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='dynamic_responses')

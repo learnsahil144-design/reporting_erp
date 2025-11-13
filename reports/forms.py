@@ -25,86 +25,97 @@ class ReportForm(forms.ModelForm):
         fields = ["custom_date", "shift", "notes"]
 
     def __init__(self, *args, **kwargs):
-        # Capture user
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
         # ✅ Add default static fields based on the user's team
-        if self.user:
-            if self.user.team == "content_writer":
-                self.fields["short_video"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Short Videos"
-                )
-                self.fields["reels"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Reels"
-                )
-                self.fields["long_video"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Long Videos"
-                )
-                self.fields["interview"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Interviews"
-                )
+        if not self.user:
+            return
 
-            elif self.user.team == "graphic_designer":
-                self.fields["reel_thumbnail"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Reel Thumbnails"
-                )
-                self.fields["interview_thumbnail"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Interview Thumbnails"
-                )
-                self.fields["short_thumbnail"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Short Thumbnails"
-                )
-                self.fields["post"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Social Media Posts"
-                )
-                self.fields["scroller"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Scrollers"
-                )
+        team = self.user.team
 
-            elif self.user.team == "video_editor":
-                self.fields["edit_short_video"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Edited Short Videos"
-                )
-                self.fields["edit_reels"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Edited Reels"
-                )
-                self.fields["edit_long_video"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Edited Long Videos"
-                )
-                self.fields["edit_interview"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Edited Interviews"
-                )
+        # ---------------------- Video Producer ----------------------
+        if team == "video_producer":
+            static_fields = [
+                "Presenter Video", "Live Video", "Logo Video", "Special Work Video",
+                "Reel Video", "VO Video", "Interview Video", "Anchor/Presenter Video"
+            ]
 
-            elif self.user.team == "social_media":
-                self.fields["facebook_posts"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Facebook Posts"
-                )
-                self.fields["instagram_posts"] = forms.IntegerField(
-                    min_value=0, initial=0, label="Instagram Posts"
-                )
-                self.fields["youtube_posts"] = forms.IntegerField(
-                    min_value=0, initial=0, label="YouTube Posts"
-                )
+        # ---------------------- Video Editor ----------------------
+        elif team == "video_editor":
+            static_fields = [
+                "Logo Video", "Reel Video", "Two/Three Frame Video", "VO Video",
+                "Presenter Video", "Khabarbaat Video", "Special Interview",
+                "Video Shoot", "इतर"
+            ]
+
+        # ---------------------- Graphics Designer ----------------------
+        elif team == "graphic_designer":
+            static_fields = [
+                "Thumbnail (IG/YT)", "Reel/Live Thumbnail", "WhatsApp Creative",
+                "News of the Day", "News/Vdo Comment Link", "Infographics", "Slider",
+                "Statement", "Special Day", "Swipe Up", "Pointer Creative",
+                "Special Video Graphics", "Comment Creative"
+            ]
+
+        # ---------------------- Content Writer ----------------------
+        elif team == "content_writer":
+            static_fields = [
+                "News", "Bulletin", "Gallery", "Web Story", "Creative",
+                "Slider", "X Post", "App Post"
+            ]
+
+        # ---------------------- Social Media ----------------------
+        elif team == "social_media":
+            static_fields = [
+                "Video Post", "Creative Post", "Live Video", "Slider Post",
+                "Swipe Up", "News In Comment", "Paid Promotion Post"
+            ]
+
+        # ---------------------- Reporter ----------------------
+        elif team == "reporter":
+            static_fields = [
+                "Attended Press Conference", "Breaking News", "Special Story", "Interview"
+            ]
+
+        # ---------------------- Cameraman ----------------------
+        elif team == "cameraman":
+            static_fields = [
+                "Attended Press Conference", "Special Story", "Interview",
+                "Event", "B Rolls", "Live"
+            ]
+
+        # ---------------------- Marketing ----------------------
+        elif team == "marketing":
+            static_fields = [
+                "Client Visit Details", "Next Day Plan", "Client Follow-up Details"
+            ]
+
+        else:
+            static_fields = []
+
+        # Dynamically create form fields for each static field
+        for label in static_fields:
+            field_name = label.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+            self.fields[field_name] = forms.IntegerField(
+                min_value=0, initial=0, required=False, label=label
+            )
 
     def save(self, commit=True):
         report = super().save(commit=False)
         report.user = self.user
 
-        # Combine built-in + team fields into JSON
+        # ✅ Collect all numeric/static fields into JSON
         tasks_data = {
             k: v for k, v in self.cleaned_data.items()
             if k not in ["custom_date", "notes", "shift"]
         }
         report.tasks = tasks_data
-
-        # Save basic data
         report.shift = self.cleaned_data.get("shift")
         report.notes = self.cleaned_data.get("notes", "")
 
         if commit:
             report.save()
-
         return report
 
 

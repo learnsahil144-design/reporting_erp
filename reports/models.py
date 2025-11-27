@@ -29,7 +29,7 @@ class User(AbstractUser):
 class Report(models.Model):
     SHIFT_CHOICES = [
         ('7_3_30', '7:00 AM – 3:30 PM'),
-        ('8_8_30', '8:00 AM – 8:30 PM'),
+        ('8_8_30', '8:00 AM – 4:30 PM'),
         ('9_5_30', '9:00 AM – 5:30 PM'),
         ('10_6_30', '10:00 AM – 6:30 PM'),
         ('12_8_30', '12:00 PM – 8:30 PM'),
@@ -119,3 +119,29 @@ class DynamicFieldResponse(models.Model):
 
     def __str__(self):
         return f"{self.report} - {self.field.label}: {self.value}"
+
+# ------------------------------
+# view report by date for user
+# ------------------------------
+
+def view_report_by_date(request):
+    selected_date = request.GET.get("date")
+    report = None
+    dynamic_fields = []
+
+    if selected_date:
+        # Get the report for the selected date
+        report = Report.objects.filter(
+            user=request.user,
+            custom_date=selected_date
+        ).first()
+
+        # If report exists, fetch dynamic field responses
+        if report:
+            dynamic_fields = DynamicFieldResponse.objects.filter(report=report)
+
+    return render(request, "user/view_report_by_date.html", {
+        "selected_date": selected_date,
+        "report": report,
+        "dynamic_fields": dynamic_fields,
+    })

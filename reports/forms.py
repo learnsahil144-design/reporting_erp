@@ -5,19 +5,38 @@ from .models import Report, User
 class ReportForm(forms.ModelForm):
     custom_date = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={"type": "date"})
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
     )
 
     notes = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Add extra notes..."}),
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Add extra notes...",
+                "class": "form-control",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        ),
         label="Notes"
     )
 
     shift = forms.ChoiceField(
         choices=Report.SHIFT_CHOICES,
         label="Shift Timing",
-        required=True
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
     )
 
     class Meta:
@@ -28,111 +47,129 @@ class ReportForm(forms.ModelForm):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
-        # ✅ Add default static fields based on the user's team
+        # ----------------- Add Bootstrap to default fields ---------------------
+        for field in self.fields.values():
+            if not field.widget.attrs.get("class"):
+                field.widget.attrs["class"] = "form-control"
+            field.widget.attrs.setdefault("style", "border-radius:8px; padding:8px 10px;")
+
+        # ----------------- No user? No dynamic fields --------------------------
         if not self.user:
             return
 
         team = self.user.team
 
-        # ---------------------- Video Producer ----------------------
-        if team == "video_producer":
-            static_fields = [
+        # --------------------- TEAM STATIC FIELDS ------------------------------
+        TEAM_FIELDS = {
+            "video_producer": [
                 "Presenter Video", "Live Video", "Logo Video", "Special Work Video",
                 "Reel Video", "VO Video", "Interview Video", "Anchor/Presenter Video"
-            ]
-
-        # ---------------------- Video Editor ----------------------
-        elif team == "video_editor":
-            static_fields = [
+            ],
+            "video_editor": [
                 "Logo Video", "Reel Video", "Two/Three Frame Video", "VO Video",
                 "Presenter Video", "Khabarbaat Video", "Special Interview",
                 "Video Shoot", "इतर"
-            ]
-
-        # ---------------------- Graphics Designer ----------------------
-        elif team == "graphic_designer":
-            static_fields = [
+            ],
+            "graphic_designer": [
                 "Thumbnail (IG/YT)", "Reel/Live Thumbnail", "WhatsApp Creative",
                 "News of the Day", "News/Vdo Comment Link", "Infographics", "Slider",
                 "Statement", "Special Day", "Swipe Up", "Pointer Creative",
                 "Special Video Graphics", "Comment Creative"
-            ]
-
-        # ---------------------- Content Writer ----------------------
-        elif team == "content_writer":
-            static_fields = [
+            ],
+            "content_writer": [
                 "News", "Bulletin", "Gallery", "Web Story", "Creative",
                 "Slider", "X Post", "App Post"
-            ]
-
-        # ---------------------- Social Media ----------------------
-        elif team == "social_media":
-            static_fields = [
+            ],
+            "social_media": [
                 "Video Post", "Creative Post", "Live Video", "Slider Post",
                 "Swipe Up", "News In Comment", "Paid Promotion Post"
-            ]
-
-        # ---------------------- Reporter ----------------------
-        elif team == "reporter":
-            static_fields = [
-                "Attended Press Conference", "Breaking News", "Special Story", "Interview"
-            ]
-
-        # ---------------------- Cameraman ----------------------
-        elif team == "cameraman":
-            static_fields = [
-                "Attended Press Conference", "Special Story", "Interview",
-                "Event", "B Rolls", "Live"
-            ]
-
-        # ---------------------- Marketing ----------------------
-        elif team == "marketing":
-            static_fields = [
+            ],
+            "reporter": [
+                "Attended Press Conference", "Breaking News",
+                "Special Story", "Interview"
+            ],
+            "cameraman": [
+                "Attended Press Conference", "Special Story",
+                "Interview", "Event", "B Rolls", "Live"
+            ],
+            "marketing": [
                 "Client Visit Details", "Next Day Plan", "Client Follow-up Details"
-            ]
+            ],
+        }
 
-        else:
-            static_fields = []
+        static_fields = TEAM_FIELDS.get(team, [])
 
-        # Dynamically create form fields for each static field
+        # ------------------ Create dynamic numeric fields -----------------------
         for label in static_fields:
             field_name = label.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+
             self.fields[field_name] = forms.IntegerField(
-                min_value=0, initial=0, required=False, label=label
+                min_value=0,
+                initial=0,
+                required=False,
+                label=label,
+                widget=forms.NumberInput(
+                    attrs={
+                        "class": "form-control",
+                        "style": "border-radius:8px; padding:8px 10px;"
+                    }
+                )
             )
 
     def save(self, commit=True):
         report = super().save(commit=False)
         report.user = self.user
 
-        # ✅ Collect all numeric/static fields into JSON
+        # Collect all dynamic fields except main fields
         tasks_data = {
             k: v for k, v in self.cleaned_data.items()
             if k not in ["custom_date", "notes", "shift"]
         }
+
         report.tasks = tasks_data
         report.shift = self.cleaned_data.get("shift")
         report.notes = self.cleaned_data.get("notes", "")
 
         if commit:
             report.save()
+
         return report
 
 
-# ✅ Admin filter form for filtering reports
+# ---------------- Admin Filter Form -------------------
 class ReportFilterForm(forms.Form):
     team = forms.ChoiceField(
         choices=[("", "All Teams")] + list(User.TEAM_CHOICES),
         required=False,
-        label="Select Team"
+        label="Select Team",
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
     )
+
     user = forms.ModelChoiceField(
         queryset=User.objects.all(),
         required=False,
-        label="Select User"
+        label="Select User",
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
     )
+
     shift = forms.ChoiceField(
         choices=[("", "All Shifts")] + list(Report.SHIFT_CHOICES),
         required=False,
-        label="Select Shift"
+        label="Select Shift",
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
     )

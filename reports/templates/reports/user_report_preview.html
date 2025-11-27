@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+
+{% block title %}My Report – {{ selected_date }}{% endblock %}
+
+{% block content %}
+
+<div class="card p-4 shadow-sm">
+    <h3 class="mb-3 text-primary">📄 Report for {{ selected_date }}</h3>
+
+    {% if report %}
+    <table class="table table-bordered">
+        <tr>
+            <th width="25%">Date</th>
+            <td>{{ report.custom_date }}</td>
+        </tr>
+
+        <tr>
+            <th>Shift</th>
+            <td>{{ report.get_shift_display }}</td>
+        </tr>
+
+        <tr>
+            <th>Notes</th>
+            <td>{{ report.notes|default:"—" }}</td>
+        </tr>
+
+        <tr>
+            <th>Status</th>
+            <td>
+                {% if report.is_late_submission %}
+                    <span class="badge bg-danger">Late Submission</span>
+                {% else %}
+                    <span class="badge bg-success">On Time</span>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <h4 class="mt-4">📌 Tasks Completed</h4>
+
+    <ul class="list-group">
+
+        {% if report.tasks %}
+            {% for k, v in report.tasks.items %}
+            <li class="list-group-item d-flex justify-content-between">
+                <strong>{{ k|title }}</strong>
+                <span>{{ v }}</span>
+            </li>
+            {% endfor %}
+        {% else %}
+            <li class="list-group-item text-muted">No tasks recorded.</li>
+        {% endif %}
+
+        {% if dynamic_fields %}
+            {% for k, v in dynamic_fields.items %}
+            <li class="list-group-item d-flex justify-content-between">
+                <strong>{{ k }}</strong>
+                <span>{{ v }}</span>
+            </li>
+            {% endfor %}
+        {% endif %}
+
+    </ul>
+
+    <!-- Back Button Fixed -->
+    <a href="/report/" class="btn btn-secondary mt-4">⬅ Back to Submit Page</a>
+
+    {% else %}
+    <div class="alert alert-warning">
+        No report found for <strong>{{ selected_date }}</strong>.
+    </div>
+
+    <a href="/report/" class="btn btn-primary mt-3">Submit Report</a>
+    {% endif %}
+</div>
+
+{% endblock %}

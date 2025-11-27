@@ -14,7 +14,7 @@ from .models import Report, User, AdminNotice, DynamicField, DynamicFieldRespons
 
 
 # ----------------------------------------------------
-# 📝 USER REPORT SUBMISSION (with dynamic fields)
+# 📝 USER REPORT SUBMISSION (supports static + dynamic fields)
 # ----------------------------------------------------
 @login_required
 def submit_report(request):
@@ -22,11 +22,12 @@ def submit_report(request):
 
     if request.method == "POST":
         form = ReportForm(request.POST, user=user)
+
         if form.is_valid():
             try:
                 report = form.save()
 
-                # ✅ Save dynamic field responses separately
+                # Save dynamic fields for user’s team
                 dynamic_fields = DynamicField.objects.filter(team=user.team)
                 for field in dynamic_fields:
                     value = request.POST.get(field.name)
@@ -34,7 +35,7 @@ def submit_report(request):
                         DynamicFieldResponse.objects.create(
                             report=report,
                             field=field,
-                            value=value
+                            value=value,
                         )
 
                 messages.success(request, "Report submitted successfully!")
@@ -42,27 +43,76 @@ def submit_report(request):
 
             except ValidationError as e:
                 messages.error(request, str(e))
+
         else:
             messages.error(request, "Please correct the errors below.")
+
     else:
         form = ReportForm(user=user)
 
-    # ✅ Fetch dynamic fields for this user's team
+    # Fetch dynamic fields for template
     dynamic_fields = DynamicField.objects.filter(team=user.team)
 
-    # ✅ Fetch notices and submission dates
-    notices = AdminNotice.objects.all().order_by("-created_at")
+    # Calendar highlight
     reports = Report.objects.filter(user=user)
-    submission_dates = [r.custom_date.strftime("%Y-%m-%d") for r in reports if r.custom_date]
+    submission_dates = [
+        r.custom_date.strftime("%Y-%m-%d")
+        for r in reports
+        if r.custom_date
+    ]
 
     context = {
         "form": form,
-        "dynamic_fields": dynamic_fields,  # only rendered under “Additional Fields”
-        "notices": notices,
+        "dynamic_fields": dynamic_fields,
+        "notices": AdminNotice.objects.all().order_by("-created_at"),
         "submission_dates": json.dumps(submission_dates),
     }
 
     return render(request, "reports/submit_report.html", context)
+
+
+# ----------------------------------------------------
+# 👁 USER REPORT PREVIEW (Fix applied)
+# ----------------------------------------------------
+@login_required
+def user_report_preview(request, date):
+    """
+    Show report preview (static + dynamic fields)
+    for the authenticated user.
+    """
+    report = (
+        Report.objects
+        .filter(user=request.user, custom_date=date)
+        .prefetch_related("dynamic_responses")
+        .first()
+    )
+
+    if not report:
+        messages.error(request, f"No report found for {date}.")
+        return redirect("submit_report")
+
+    # STATIC FIELDS (from Report.tasks JSON)
+    static_fields = {
+        k.replace("_", " ").title(): v
+        for k, v in (report.tasks or {}).items()
+    }
+
+    # DYNAMIC FIELDS (from DynamicFieldResponse)
+    dynamic_fields = {
+        resp.field.label: resp.value
+        for resp in report.dynamic_responses.all()
+    }
+
+    return render(
+        request,
+        "reports/user_report_preview.html",
+        {
+            "report": report,
+            "static_fields": static_fields,
+            "dynamic_fields": dynamic_fields,
+            "selected_date": date,
+        }
+    )
 
 
 # ----------------------------------------------------
@@ -76,6 +126,7 @@ def admin_reports_overview(request):
 
     reports = Report.objects.select_related("user").prefetch_related("dynamic_responses")
 
+    # Filters
     if team_filter:
         reports = reports.filter(user__team=team_filter)
     if user_filter:
@@ -83,71 +134,54 @@ def admin_reports_overview(request):
     if date_filter:
         reports = reports.filter(custom_date=date_filter)
 
-    combined_reports = {}
+    combined = {}
 
+    # Combine by (user, date, shift)
     for r in reports:
-        key = (r.user.id, r.custom_date or r.date, r.shift)
-        if key not in combined_reports:
-            combined_reports[key] = {
+        key = (r.user.id, r.custom_date, r.shift)
+
+        if key not in combined:
+            combined[key] = {
                 "user": r.user,
                 "team": r.user.team,
                 "shift": r.get_shift_display(),
-                "custom_date": r.custom_date or r.date,
-                "created_at": r.created_at,
+                "custom_date": r.custom_date,
                 "tasks": defaultdict(int),
                 "notes": [],
+                "created_at": r.created_at,
                 "is_late_submission": r.is_late_submission,
             }
 
-        # ✅ Include static fields
+        # Static fields
         for k, v in (r.tasks or {}).items():
             try:
-                combined_reports[key]["tasks"][k] += int(v)
-            except (TypeError, ValueError):
-                combined_reports[key]["tasks"][k] = v
+                combined[key]["tasks"][k] += int(v)
+            except:
+                combined[key]["tasks"][k] = v
 
-        # ✅ Include dynamic fields
-        for response in r.dynamic_responses.all():
-            combined_reports[key]["tasks"][response.field.label] = response.value
+        # Dynamic fields
+        for resp in r.dynamic_responses.all():
+            combined[key]["tasks"][resp.field.label] = resp.value
 
         if r.notes:
-            combined_reports[key]["notes"].append(r.notes)
+            combined[key]["notes"].append(r.notes)
 
-    # ✅ Format for display
-    for key in combined_reports:
+    # Format for frontend
+    for key in combined:
         formatted = {}
-        for k, v in combined_reports[key]["tasks"].items():
+        for k, v in combined[key]["tasks"].items():
             formatted[k.replace("_", " ").title()] = v
-        combined_reports[key]["tasks"] = formatted
-
-    combined_reports = list(combined_reports.values())
-
-    # ✅ Stats
-    reports_by_team = (
-        reports.values("user__team")
-        .distinct()
-        .annotate(total=Count("custom_date"))
-        .order_by("-total")
-    )
-    reports_by_user = (
-        reports.values("user__username")
-        .distinct()
-        .annotate(total=Count("custom_date"))
-        .order_by("-total")
-    )
-
-    teams = User.objects.values_list("team", flat=True).distinct()
-    users = User.objects.all()
+        combined[key]["tasks"] = formatted
 
     return render(
         request,
         "reports/admin_overview.html",
         {
-            "reports": combined_reports,
-            "reports_by_team": reports_by_team,
-            "reports_by_user": reports_by_user,
-            "teams": teams,
-            "users": users,
+            "reports": list(combined.values()),
+            "reports_by_team": reports.values("user__team").annotate(total=Count("id")),
+            "reports_by_user": reports.values("user__username").annotate(total=Count("id")),
+            "teams": User.objects.values_list("team", flat=True).distinct(),
+            "users": User.objects.all(),
             "selected_team": team_filter,
             "selected_user": user_filter,
         },
@@ -155,7 +189,7 @@ def admin_reports_overview(request):
 
 
 # ----------------------------------------------------
-# 📦 EXPORT REPORTS TO EXCEL
+# 📦 EXPORT TO EXCEL
 # ----------------------------------------------------
 @staff_member_required
 def export_reports_excel(request):
@@ -166,6 +200,7 @@ def export_reports_excel(request):
 
     reports = Report.objects.select_related("user").prefetch_related("dynamic_responses")
 
+    # Filters
     if start_date and end_date:
         reports = reports.filter(custom_date__range=[start_date, end_date])
     if team_filter:
@@ -173,15 +208,16 @@ def export_reports_excel(request):
     if user_filter:
         reports = reports.filter(user__username=user_filter)
 
-    combined_reports = {}
+    combined = {}
 
     for r in reports:
-        key = (r.user.id, r.custom_date or r.date, r.shift)
-        if key not in combined_reports:
-            combined_reports[key] = {
+        key = (r.user.id, r.custom_date, r.shift)
+
+        if key not in combined:
+            combined[key] = {
                 "username": r.user.username,
                 "team": r.user.team,
-                "custom_date": r.custom_date or r.date,
+                "custom_date": r.custom_date,
                 "shift": r.get_shift_display(),
                 "tasks": defaultdict(int),
                 "notes": [],
@@ -189,29 +225,31 @@ def export_reports_excel(request):
 
         for k, v in (r.tasks or {}).items():
             try:
-                combined_reports[key]["tasks"][k] += int(v)
-            except (TypeError, ValueError):
-                combined_reports[key]["tasks"][k] = v
+                combined[key]["tasks"][k] += int(v)
+            except:
+                combined[key]["tasks"][k] = v
 
-        for response in r.dynamic_responses.all():
-            combined_reports[key]["tasks"][response.field.label] = response.value
+        for resp in r.dynamic_responses.all():
+            combined[key]["tasks"][resp.field.label] = resp.value
 
         if r.notes:
-            combined_reports[key]["notes"].append(r.notes)
+            combined[key]["notes"].append(r.notes)
 
+    # Convert to dataframe
     export_data = []
-    for rep in combined_reports.values():
-        data = {
+    for rep in combined.values():
+        row = {
             "username": rep["username"],
             "team": rep["team"],
             "custom_date": rep["custom_date"],
             "shift": rep["shift"],
             "notes": " | ".join(rep["notes"]),
         }
-        data.update(rep["tasks"])
-        export_data.append(data)
+        row.update(rep["tasks"])
+        export_data.append(row)
 
     df = pd.DataFrame(export_data)
+
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
@@ -221,24 +259,29 @@ def export_reports_excel(request):
 
 
 # ----------------------------------------------------
-# 👤 USER REPORT DETAIL
+# 👤 ADMIN: USER DETAIL PAGE
 # ----------------------------------------------------
 @staff_member_required
 def user_report_detail(request, username):
     user = get_object_or_404(User, username=username)
-    reports = Report.objects.filter(user=user).prefetch_related("dynamic_responses").order_by("custom_date")
+    reports = (
+        Report.objects.filter(user=user)
+        .prefetch_related("dynamic_responses")
+        .order_by("custom_date")
+    )
 
-    combined_reports = {}
+    combined = {}
     task_totals = defaultdict(int)
     daily_summary = defaultdict(int)
     monthly_summary = defaultdict(int)
     yearly_summary = defaultdict(int)
 
     for r in reports:
-        date_key = r.custom_date or r.date
+        date_key = r.custom_date
         key = (date_key, r.shift)
-        if key not in combined_reports:
-            combined_reports[key] = {
+
+        if key not in combined:
+            combined[key] = {
                 "custom_date": date_key,
                 "shift": r.get_shift_display(),
                 "tasks": defaultdict(int),
@@ -246,35 +289,41 @@ def user_report_detail(request, username):
                 "is_late_submission": r.is_late_submission,
             }
 
+        # Static fields
         for k, v in (r.tasks or {}).items():
             try:
-                combined_reports[key]["tasks"][k] += int(v)
+                combined[key]["tasks"][k] += int(v)
                 task_totals[k] += int(v)
                 daily_summary[date_key] += int(v)
-                if r.custom_date:
-                    month = r.custom_date.strftime("%b %Y")
-                    year = r.custom_date.year
-                    monthly_summary[month] += int(v)
-                    yearly_summary[year] += int(v)
-            except (TypeError, ValueError):
+
+                month = date_key.strftime("%b %Y")
+                yearly = date_key.year
+
+                monthly_summary[month] += int(v)
+                yearly_summary[yearly] += int(v)
+
+            except:
                 continue
 
-        for response in r.dynamic_responses.all():
-            combined_reports[key]["tasks"][response.field.label] = response.value
+        # Dynamic fields
+        for resp in r.dynamic_responses.all():
+            combined[key]["tasks"][resp.field.label] = resp.value
 
         if r.notes:
-            combined_reports[key]["notes"].append(r.notes)
+            combined[key]["notes"].append(r.notes)
 
-    for key in combined_reports:
-        formatted = {}
-        for k, v in combined_reports[key]["tasks"].items():
-            formatted[k.replace("_", " ").title()] = v
-        combined_reports[key]["tasks"] = formatted
+    # Format task names
+    for key in combined:
+        formatted = {
+            k.replace("_", " ").title(): v
+            for k, v in combined[key]["tasks"].items()
+        }
+        combined[key]["tasks"] = formatted
 
     context = {
         "user": user,
-        "reports": list(combined_reports.values()),
-        "task_totals": dict((k.replace("_", " ").title(), v) for k, v in task_totals.items()),
+        "reports": list(combined.values()),
+        "task_totals": {k.replace("_", " ").title(): v for k, v in task_totals.items()},
         "daily_summary": {str(k): v for k, v in sorted(daily_summary.items())},
         "monthly_summary": dict(monthly_summary),
         "yearly_summary": dict(yearly_summary),

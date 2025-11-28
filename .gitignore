@@ -1,19 +1,84 @@
-# Python
+# ============================
+# 🐍 Python
+# ============================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Django
-*.sqlite3
-*.log
-staticfiles/
-media/
-
-# Environment
+# Virtual Environments
 .env
+.env.*
 venv/
 env/
+.venv/
 
-# VS Code / OS files
+# ============================
+# 🧩 Django
+# ============================
+
+# SQLite (if used locally)
+*.sqlite3
+
+# Django logs
+*.log
+
+# Static & Media (generated on server)
+static/
+staticfiles/
+media/
+media_root/
+
+# Cache files
+*.cache
+
+# Local development settings
+settings_local.py
+
+# ============================
+# 🧪 Tests
+# ============================
+.coverage
+*.cover
+htmlcov/
+pytest_cache/
+
+# ============================
+# 🐳 Docker
+# ============================
+# Ignore local docker compose overrides
+docker-compose.override.yml
+
+# Ignore build artifacts
+*.pid
+*.sock
+
+# ============================
+# 🧠 Migrations (optional)
+# ============================
+# Uncomment ONLY if you do NOT want to track migrations in Git
+# ** Not recommended for production/open-source projects **
+# */migrations/
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# ============================
+# 🖥 IDE / Editor Files
+# ============================
+
+# VS Code
 .vscode/
+
+# JetBrains / PyCharm
+.idea/
+*.iml/
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# ============================
+# ⚙️ Other files
+# ============================
+*.env.backup
+*.local
+*.bak

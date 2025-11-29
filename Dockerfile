@@ -1,4 +1,4 @@
-# Use the official Python slim image
+# Use Python slim image
 FROM python:3.11-slim
 
 # Set working directory
@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies for building Python packages
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libffi-dev \
@@ -16,20 +16,21 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements for caching
 COPY requirements.txt /app/
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+# Install dependencies (Gunicorn should NOT be installed separately)
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy project code
 COPY . /app/
 
-# Collect static files (optional but safe)
+# Collect static files
 RUN python manage.py collectstatic --noinput || true
 
-# Expose Django port
+# Expose port
 EXPOSE 8900
 
-# Default command to run Django server on all interfaces
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8900"]
+# Start Gunicorn server
+CMD ["gunicorn", "media_reporting.wsgi:application", "--bind", "0.0.0.0:8900"]

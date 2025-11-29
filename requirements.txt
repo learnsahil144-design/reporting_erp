@@ -15,21 +15,18 @@ Babel==2.15.0
 
 # Web server and HTTP utilities
 asgiref==3.8.1
+gunicorn==22.0.0   # <--- REQUIRED FOR DOCKER PRODUCTION
 
 # Authentication & password hashing
 argon2-cffi==23.1.0
 
-# For serving static files easily in dev (optional but useful)
+# Static files in production
 whitenoise==6.7.0
 
+# Database URL parser
 dj-database-url==1.0.0
+
 django-extensions==4.1
 
+# Postgres driver
 psycopg2-binary==2.9.9
-
-# For chart rendering (frontend via CDN, not needed here, but kept for clarity)
-# chart.js is loaded from CDN in templates, no need to install it.
-
-# If you use Django REST or plan future APIs (optional)
-# djangorestframework==3.15.2
-

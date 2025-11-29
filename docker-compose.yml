@@ -1,19 +1,21 @@
-version: "3.9"
-
 services:
   web:
     build: .
     container_name: reporting_app
-    command: python manage.py runserver 0.0.0.0:8900
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn media_reporting.wsgi:application --bind 0.0.0.0:8900"
     ports:
       - "8900:8900"
     volumes:
       - .:/app
     environment:
-      - DEBUG=0
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/reporting_db
+      DEBUG: "0"
+      DATABASE_URL: postgres://postgres:postgres@db:5432/reporting_db
+      DJANGO_SETTINGS_MODULE: media_reporting.settings.base
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:15
@@ -25,18 +27,24 @@ services:
       POSTGRES_DB: reporting_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4:8
     container_name: reporting_pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com   # login email
-      PGADMIN_DEFAULT_PASSWORD: admin          # login password
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"   # you’ll access pgAdmin at http://localhost:5050
+      - "5050:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

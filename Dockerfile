@@ -1,36 +1,32 @@
-# Use Python slim image
 FROM python:3.11-slim
 
-# Set working directory
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Prevent Python from writing .pyc files and buffering output
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    libpq-dev \
     libffi-dev \
     libssl-dev \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements for caching
-COPY requirements.txt /app/
-
-# Install dependencies (Gunicorn should NOT be installed separately)
+COPY requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy project code
-COPY . /app/
+COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
+RUN addgroup --system django \
+    && adduser --system --ingroup django django \
+    && chown -R django:django /app
 
-# Expose port
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER django
+
 EXPOSE 8900
 
-# Start Gunicorn server
-CMD ["gunicorn", "media_reporting.wsgi:application", "--bind", "0.0.0.0:8900"]
+CMD ["/entrypoint.sh"]

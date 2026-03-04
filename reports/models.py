@@ -119,29 +119,3 @@ class DynamicFieldResponse(models.Model):
 
     def __str__(self):
         return f"{self.report} - {self.field.label}: {self.value}"
-
-# ------------------------------
-# view report by date for user
-# ------------------------------
-
-def view_report_by_date(request):
-    selected_date = request.GET.get("date")
-    report = None
-    dynamic_fields = []
-
-    if selected_date:
-        # Get the report for the selected date
-        report = Report.objects.filter(
-            user=request.user,
-            custom_date=selected_date
-        ).first()
-
-        # If report exists, fetch dynamic field responses
-        if report:
-            dynamic_fields = DynamicFieldResponse.objects.filter(report=report)
-
-    return render(request, "user/view_report_by_date.html", {
-        "selected_date": selected_date,
-        "report": report,
-        "dynamic_fields": dynamic_fields,
-    })

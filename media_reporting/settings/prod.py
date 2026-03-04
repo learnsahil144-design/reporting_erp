@@ -1,34 +1,34 @@
 from .base import *
 import os
-import environ
-
-env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "report.stpprojects.in",
-    "www.report.stpprojects.in",
-]
-
 CSRF_TRUSTED_ORIGINS = [
-    "https://report.stpprojects.in",
-    "http://report.stpprojects.in",
-    "https://www.report.stpprojects.in",
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin
 ]
 
-# ✅ Important for Cloudflare Tunnel — tells Django that HTTPS is handled by proxy
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# ✅ Database (PostgreSQL via docker-compose)
-DATABASES = {
-    "default": env.db("DATABASE_URL")
-}
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True") == "True"
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True") == "True"
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True") == "True"
 
-# ✅ Optional: redirect all HTTP → HTTPS automatically
-SECURE_SSL_REDIRECT = True
-# Whitenoise: enable gzip and cache-busting for static files
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DATABASES["default"]["CONN_MAX_AGE"] = 600
+
+# ======================================================
+# Security Hardening
+# ======================================================
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Cookie Security
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"

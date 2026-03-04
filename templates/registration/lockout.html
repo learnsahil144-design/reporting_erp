@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Locked - Security</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; max-width: 450px; width: 100%; padding: 20px; }
+        .text-danger { font-size: 3rem; margin-bottom: 20px; }
+        h2 { font-weight: 700; color: #333; }
+        p { color: #666; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <div class="card text-center">
+        <div class="card-body">
+            <div class="text-danger">⚠️</div>
+            <h2>Account Temporarily Locked</h2>
+            <p>Too many failed login attempts. For security reasons, your IP has been temporarily blocked from signing in.</p>
+            <p>Please try again in 1 hour or contact your administrator.</p>
+            <a href="/login/" class="btn btn-primary mt-3 w-100">Back to Login</a>
+        </div>
+    </div>
+</body>
+</html>

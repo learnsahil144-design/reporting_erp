@@ -13,8 +13,8 @@ from reports.views import (
 
 urlpatterns = [
 
-    # 🔧 Django Admin
-    path("admin/", admin.site.urls),
+    # 🔧 Django Admin (Obscured for security)
+    path("management-portal/", admin.site.urls),
 
     # 🏠 Default → Login
     path("", lambda request: redirect("login"), name="home"),

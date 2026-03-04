@@ -30,3 +30,6 @@ django-extensions==4.1
 
 # Postgres driver
 psycopg2-binary==2.9.9
+
+# Security Hardening
+django-axes==6.4.0   # <--- Brute-force protection

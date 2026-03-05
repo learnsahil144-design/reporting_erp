@@ -32,3 +32,29 @@ This ERP system has been significantly hardened with industry-standard security 
 
 ---
 *Report security vulnerabilities to: admin@letsupp.com*
+
+## 🌩️ Server-Level Security (OS Hardening)
+
+To ensure "nobody enters your server" through this project, follow these server-side best practices:
+
+### 1. 🛡️ Firewall & Network
+- **Restrict Ports**: Only open ports `80` (HTTP), `443` (HTTPS), and `22` (SSH).
+- **SSH Key Authentication**: Disable password-based SSH login. Use RSA/Ed25519 keys instead.
+- **Fail2Ban**: Install `fail2ban` on the server to block IPs that repeatedly fail SSH or Web logins.
+
+### 2. 🐳 Docker Container Isolation
+- **Non-Root User**: The project is configured to run as the `django` user inside the container. Never run as `root`.
+- **Resource Limits**: Limit CPU and Memory for the container in `docker-compose.yml` to prevent DoS via resource exhaustion.
+- **Read-Only FS**: In production, consider mounting the app directory as read-only.
+
+### 3. 🔑 Environment & Secrets
+- **Never Commit .env**: Ensure `.env` is never uploaded to public repositories.
+- **Strong Secret Key**: Use a unique, long, and random `SECRET_KEY`.
+- **Database Access**: Ensure the database port (`5432`) is **not** exposed to the public internet. It should only be accessible within the Docker network.
+
+### 4. 🚀 Production Deployment Audit
+Before going live, run:
+```bash
+python manage.py check --deploy --settings=media_reporting.settings.prod
+```
+This command checks for missing security settings (like HSTS, Secure Cookies, etc.).

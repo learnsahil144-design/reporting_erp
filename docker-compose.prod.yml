@@ -1,22 +1,26 @@
+# ======================================================
+# 🚀 PROD Docker Compose for Media Reporting ERP
+# ======================================================
+
 services:
   web:
-    build: .
+    image: tsgdevelopments/reporting-erp:latest
     container_name: reporting_app
+    restart: unless-stopped
     ports:
-      - "9001:8900"
+      - "80:8900"
     env_file:
-      - .env
+      - .env.prod
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
 
   db:
     image: postgres:15
     container_name: reporting_db
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.prod
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

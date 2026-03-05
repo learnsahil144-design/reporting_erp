@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Environment
+.env
+venv
+env
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Local data
+media/
+staticfiles/
+security_audit.log
+*.sqlite3
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDEs
+.vscode/
+.idea/

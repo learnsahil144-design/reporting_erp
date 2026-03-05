@@ -33,3 +33,4 @@ psycopg2-binary==2.9.9
 
 # Security Hardening
 django-axes==6.4.0   # <--- Brute-force protection
+django-csp==3.8      # <--- Content Security Policy

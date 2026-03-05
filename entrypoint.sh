@@ -1,6 +1,7 @@
 #!/bin/sh
 
 echo "Running migrations..."
+export DJANGO_SETTINGS_MODULE=media_reporting.settings.prod
 python manage.py migrate --noinput
 
 echo "Collecting static files..."

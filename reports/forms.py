@@ -1,10 +1,11 @@
 from django import forms
+from django.utils import timezone
 from .models import Report, User
-
 
 class ReportForm(forms.ModelForm):
     custom_date = forms.DateField(
         required=False,
+        initial=timezone.now().date,
         widget=forms.DateInput(
             attrs={
                 "type": "date",
@@ -39,9 +40,21 @@ class ReportForm(forms.ModelForm):
         )
     )
 
+    report_type = forms.ChoiceField(
+        choices=Report.REPORT_TYPES,
+        initial='regular',
+        label="Reporting For",
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+                "style": "border-radius:8px; padding:8px 10px;"
+            }
+        )
+    )
+
     class Meta:
         model = Report
-        fields = ["custom_date", "shift", "notes"]
+        fields = ["custom_date", "report_type", "shift", "notes"]
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -123,12 +136,16 @@ class ReportForm(forms.ModelForm):
         # Collect all dynamic fields except main fields
         tasks_data = {
             k: v for k, v in self.cleaned_data.items()
-            if k not in ["custom_date", "notes", "shift"]
+            if k not in ["custom_date", "notes", "shift", "report_type"]
         }
 
         report.tasks = tasks_data
         report.shift = self.cleaned_data.get("shift")
+        report.report_type = self.cleaned_data.get("report_type")
         report.notes = self.cleaned_data.get("notes", "")
+
+        if not report.custom_date:
+            report.custom_date = timezone.now().date()
 
         if commit:
             report.save()

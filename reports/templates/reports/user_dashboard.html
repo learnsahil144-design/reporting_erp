@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Report System{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- 👋 Greeting Section -->
+    <div class="col-12 mb-2">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Hello, {{ request.user.username }}! 👋</h2>
+                <p class="text-muted mb-0">Here's what's happening in your workspace today.</p>
+            </div>
+            <div>
+                <span class="badge bg-white shadow-sm text-dark border px-3 py-2 rounded-pill">
+                    <span class="text-primary fw-bold">{{ today|date:"l, d M Y" }}</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📊 Stats Grid -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100 position-relative overflow-hidden">
+            <div class="position-relative" style="z-index: 2;">
+                <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Submission Status</label>
+                {% if has_submitted_today %}
+                <h3 class="fw-bold text-success mb-2">Complete</h3>
+                <p class="small text-muted mb-0">You've loggged your progress for today. Great job!</p>
+                {% else %}
+                <h3 class="fw-bold text-warning mb-2">Pending</h3>
+                <p class="small text-muted mb-0">Don't forget to submit your report before the shift ends.</p>
+                {% endif %}
+            </div>
+            <!-- Decorative background icon -->
+            <div class="position-absolute opacity-10" style="bottom: -10px; right: -10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-primary">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100 position-relative overflow-hidden">
+            <div class="position-relative" style="z-index: 2;">
+                <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Overall Activity</label>
+                <h3 class="fw-bold text-dark mb-2">{{ total_reports }} Reports</h3>
+                <p class="small text-muted mb-0">Total submissions since you joined the team.</p>
+            </div>
+            <div class="position-absolute opacity-10" style="bottom: -10px; right: -10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-primary">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100 bg-primary text-white position-relative overflow-hidden">
+            <div class="position-relative" style="z-index: 2;">
+                <label class="small fw-bold text-white-50 text-uppercase mb-3 d-block">Quick Action</label>
+                {% if has_submitted_today %}
+                <a href="{% url 'submit_report' %}" class="btn btn-light w-100 py-3 fw-bold rounded-3">
+                    View My History
+                </a>
+                {% else %}
+                <a href="{% url 'submit_report' %}" class="btn btn-light w-100 py-3 fw-bold rounded-3">
+                    Submit Report Now
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 📢 Recent Notices -->
+    <div class="col-lg-8 mt-3">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="fw-bold text-dark mb-0">Recent Announcements</h5>
+                <a href="#" class="small text-primary text-decoration-none">View All</a>
+            </div>
+
+            {% if recent_notices %}
+            <div class="list-group list-group-flush">
+                {% for notice in recent_notices %}
+                <div class="list-group-item px-0 py-4 border-0 border-bottom last-child-border-0">
+                    <div class="d-flex gap-3">
+                        <div class="bg-primary-subtle text-primary rounded-3 d-flex align-items-center justify-content-center p-2 h-100"
+                            style="width: 48px; height: 48px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h6 class="fw-bold mb-0">{{ notice.title }}</h6>
+                                <span class="badge bg-light text-muted small border fw-normal">{{ notice.created_at|timesince }} ago</span>
+                            </div>
+                            <p class="text-muted small mb-0 lh-base">{{ notice.content|truncatewords:30 }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">No new announcements at the moment.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 🗓 Upcoming Calendar / Quick Info -->
+    <div class="col-lg-4 mt-3">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-4">Your Profile</h5>
+            <div class="text-center mb-4">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 80px; height: 80px; font-size: 2rem; font-weight: 700;">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+                <h5 class="fw-bold mb-1">{{ request.user.username }}</h5>
+                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill small">Team: {{ request.user.team|capfirst }}</span>
+            </div>
+
+            <div class="border-top pt-4">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Account Type</span>
+                    <span class="small fw-bold">{% if request.user.is_superuser %}Admin{% else %}Employee{% endif %}</span>
+
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Weekly Off</span>
+                    <span class="small fw-bold text-primary">{{ request.user.get_weekly_off_display }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Joined Date</span>
+                    <span class="small fw-bold">{{ request.user.date_joined|date:"M Y" }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted small">Status</span>
+                    <span class="text-success small fw-bold">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .last-child-border-0:last-child {
+        border-bottom: 0 !important;
+    }
+</style>
+{% endblock %}

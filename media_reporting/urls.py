@@ -9,6 +9,8 @@ from reports.views import (
     user_report_detail,
     export_reports_excel,
     user_report_preview,
+    user_dashboard,
+    admin_change_password,
 )
 
 urlpatterns = [
@@ -16,8 +18,8 @@ urlpatterns = [
     # 🔧 Django Admin (Obscured for security)
     path("management-portal/", admin.site.urls),
 
-    # 🏠 Default → Login
-    path("", lambda request: redirect("login"), name="home"),
+    # 🏠 Default → Dashboard
+    path("", user_dashboard, name="home"),
 
     # 🔐 Authentication
     path(
@@ -30,6 +32,9 @@ urlpatterns = [
         auth_views.LogoutView.as_view(next_page="login"),
         name="logout"
     ),
+
+    # 🏠 User Dashboard
+    path("dashboard/", user_dashboard, name="user_dashboard"),
 
     # 📝 Submit Report (User Side)
     path("report/", submit_report, name="submit_report"),
@@ -56,5 +61,12 @@ urlpatterns = [
         "my-report/<str:date>/",
         user_report_preview,
         name="user_report_preview"
+    ),
+
+    # 🔐 Admin: Reset password for any user
+    path(
+        "admin-reports/user/password-reset/<int:user_id>/",
+        admin_change_password,
+        name="staff_password_reset"
     ),
 ]

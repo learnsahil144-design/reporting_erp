@@ -8,10 +8,10 @@ from .models import User, Report, AdminNotice, DynamicField, DynamicFieldRespons
 # ------------------------------
 class CustomUserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Team Info', {'fields': ('team', 'contact')}),
+        ('Team Info', {'fields': ('team', 'contact', 'weekly_off')}),
     )
-    list_display = ('username', 'email', 'team', 'is_staff')
-    list_filter = ('team', 'is_staff')
+    list_display = ('username', 'email', 'team', 'weekly_off', 'is_staff')
+    list_filter = ('team', 'is_staff', 'weekly_off')
     search_fields = ('username', 'email')
 
 

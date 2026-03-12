@@ -1,45 +1,144 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Login - Report System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Report System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom Modern CSS -->
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
     <style>
         body {
-            background: #f0f2f5;
+            background: radial-gradient(circle at top right, #f8fafc, #eff6ff);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        .login-container {
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 30px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .logo {
-            display: block;
-            margin: 0 auto 20px;
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            background-color: #f8fafc;
+        }
+
+        .auth-logo {
             height: 60px;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .auth-logo:hover {
+            transform: scale(1.05);
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <!-- ✅ Logo -->
-        <img src="{% static 'Logo.png' %}" alt="Logo" class="logo">
 
-        <h3 class="text-center mb-4">Login</h3>
+<body class="fade-in">
 
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary w-100">Login</button>
-        </form>
+    <div class="login-card">
+        <div class="card border-0 shadow-lg p-xl-5 p-4">
+            <div class="text-center">
+                <img src="{% static 'reports/Logo.png' %}" alt="Logo" class="auth-logo">
+                <h2 class="fw-bold text-dark mb-1">Welcome Back</h2>
+                <p class="text-muted mb-5">Please enter your credentials to continue.</p>
+            </div>
 
-        <p class="text-center mt-3">
-            <a href="/">Back to Home</a>
-        </p>
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                <div class="alert alert-danger small py-2 mb-4 d-flex align-items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {{ error }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-4">
+                    <label for="{{ field.id_for_label }}" class="form-label small fw-bold text-muted text-uppercase">{{ field.label }}</label>
+                    <div class="position-relative">
+                        {{ field }}
+                    </div>
+                    {% for error in field.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe">
+                        <label class="form-check-label small text-muted" for="rememberMe">
+                            Remember me
+                        </label>
+                    </div>
+                    <a href="#" class="small text-primary text-decoration-none fw-medium">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-4">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="text-center mt-2 border-top pt-4">
+                <p class="small text-muted mb-0">Don't have an account? <span class="text-dark fw-bold">Contact
+                        Admin</span></p>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/"
+                class="small text-muted text-decoration-none d-flex align-items-center justify-content-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
+
 </html>

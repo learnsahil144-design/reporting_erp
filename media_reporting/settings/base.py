@@ -101,6 +101,7 @@ USE_TZ = True
 # ======================================================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ======================================================
@@ -143,7 +144,7 @@ AXES_LOCKOUT_TEMPLATE = "registration/lockout.html"
 AXES_RESET_ON_SUCCESS = True
 
 LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/report/"
+LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/login/"
 
 # ======================================================

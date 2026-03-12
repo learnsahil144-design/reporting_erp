@@ -9,8 +9,41 @@ from collections import defaultdict
 import pandas as pd
 import json
 
+from django.contrib.auth.forms import SetPasswordForm
 from .forms import ReportForm
 from .models import Report, User, AdminNotice, DynamicField, DynamicFieldResponse
+
+
+import datetime
+
+
+# ----------------------------------------------------
+# 🏠 USER DASHBOARD (Main Landing Page)
+# ----------------------------------------------------
+@login_required
+def user_dashboard(request):
+    """
+    Personalized landing page for employees.
+    """
+    user = request.user
+    today = datetime.date.today()
+    
+    # Check if today's report is submitted
+    has_submitted_today = Report.objects.filter(user=user, custom_date=today).exists()
+    
+    # Fetch user's report history count
+    total_reports = Report.objects.filter(user=user).count()
+    
+    # Recent Notices
+    recent_notices = AdminNotice.objects.all().order_by("-created_at")[:3]
+    
+    context = {
+        "has_submitted_today": has_submitted_today,
+        "total_reports": total_reports,
+        "recent_notices": recent_notices,
+        "today": today,
+    }
+    return render(request, "reports/user_dashboard.html", context)
 
 
 # ----------------------------------------------------
@@ -55,17 +88,17 @@ def submit_report(request):
 
     # Calendar highlight
     reports = Report.objects.filter(user=user)
-    submission_dates = [
-        r.custom_date.strftime("%Y-%m-%d")
-        for r in reports
-        if r.custom_date
+    submission_data = [
+        {"date": r.custom_date.strftime("%Y-%m-%d"), "type": r.report_type}
+        for r in reports if r.custom_date
     ]
 
     context = {
         "form": form,
         "dynamic_fields": dynamic_fields,
         "notices": AdminNotice.objects.all().order_by("-created_at"),
-        "submission_dates": json.dumps(submission_dates),
+        "submission_data": json.dumps(submission_data),
+        "weekly_off": user.weekly_off,
     }
 
     return render(request, "reports/submit_report.html", context)
@@ -150,6 +183,7 @@ def admin_reports_overview(request):
                 "notes": [],
                 "created_at": r.created_at,
                 "is_late_submission": r.is_late_submission,
+                "report_type": r.report_type,
             }
 
         # Static fields
@@ -173,13 +207,17 @@ def admin_reports_overview(request):
             formatted[k.replace("_", " ").title()] = v
         combined[key]["tasks"] = formatted
 
+    reports_by_user = list(reports.values("user__username").annotate(total=Count("id")))
+
     return render(
         request,
         "reports/admin_overview.html",
         {
             "reports": list(combined.values()),
             "reports_by_team": reports.values("user__team").annotate(total=Count("id")),
-            "reports_by_user": reports.values("user__username").annotate(total=Count("id")),
+            "reports_by_user": reports_by_user,
+            "chart_labels": json.dumps([r["user__username"] for r in reports_by_user]),
+            "chart_data": json.dumps([r["total"] for r in reports_by_user]),
             "teams": User.objects.values_list("team", flat=True).distinct(),
             "users": User.objects.all(),
             "selected_team": team_filter,
@@ -287,6 +325,7 @@ def user_report_detail(request, username):
                 "tasks": defaultdict(int),
                 "notes": [],
                 "is_late_submission": r.is_late_submission,
+                "report_type": r.report_type,
             }
 
         # Static fields
@@ -321,12 +360,43 @@ def user_report_detail(request, username):
         combined[key]["tasks"] = formatted
 
     context = {
-        "user": user,
+        "target_user": user,
         "reports": list(combined.values()),
-        "task_totals": {k.replace("_", " ").title(): v for k, v in task_totals.items()},
-        "daily_summary": {str(k): v for k, v in sorted(daily_summary.items())},
-        "monthly_summary": dict(monthly_summary),
-        "yearly_summary": dict(yearly_summary),
+        "task_totals": json.dumps({k.replace("_", " ").title(): v for k, v in task_totals.items()}),
+        "daily_summary": json.dumps({str(k): v for k, v in sorted((k, v) for k, v in daily_summary.items() if k is not None)}),
+        "monthly_summary": json.dumps(dict(monthly_summary)),
+        "yearly_summary": json.dumps(dict(yearly_summary)),
+        "submission_data": json.dumps([
+            {"date": r["custom_date"].strftime("%Y-%m-%d"), "type": r["report_type"]}
+            for r in combined.values() if r["custom_date"]
+        ]),
+        "weekly_off": user.weekly_off,
     }
 
     return render(request, "reports/user_detail.html", context)
+
+# ----------------------------------------------------
+# 🔐 ADMIN: CHANGE USER PASSWORD
+# ----------------------------------------------------
+@staff_member_required
+def admin_change_password(request, user_id):
+    """
+    Allow admin to change a user's password without knowing the old one.
+    """
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        form = SetPasswordForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Password for {user.username} has been updated successfully.")
+            return redirect('user_report_detail', username=user.username)
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = SetPasswordForm(user)
+        
+    return render(request, 'reports/admin_change_password.html', {
+        'form': form,
+        'target_user': user
+    })

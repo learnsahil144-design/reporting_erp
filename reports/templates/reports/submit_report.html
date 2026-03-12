@@ -7,79 +7,137 @@
 
 <!-- ========= Notices ========= -->
 {% if notices %}
-<div class="alert alert-info shadow-sm mb-4" style="border-radius:12px;">
-    <h5 class="fw-bold mb-2">📢 Important Notices</h5>
-    <ul class="mb-0">
+<div class="alert alert-info shadow-sm mb-5 border-0">
+    <div class="d-flex align-items-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="me-2 text-primary">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <h5 class="fw-bold mb-0">Important Notices</h5>
+    </div>
+    <ul class="mb-0 ps-4">
         {% for notice in notices %}
-        <li>
+        <li class="mb-2">
             <strong>{{ notice.title }}</strong>
-            - <small>{{ notice.created_at|date:"d M Y" }}</small><br>
-            {{ notice.content }}
+            <span class="text-muted small ms-2">— {{ notice.created_at|date:"d M Y" }}</span>
+            <p class="mb-0 mt-1 opacity-75">{{ notice.content }}</p>
         </li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
-<div class="row g-4">
+<div class="row g-5">
 
     <!-- ========== LEFT: Report Form ========== -->
-    <div class="col-lg-6">
-        <div class="card p-4 shadow-sm" style="border-radius:16px;">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm p-lg-5 p-4">
 
-            <div class="text-center mb-3">
-                <img src="{% static 'reports/Logo_border.png' %}" alt="Logo" height="70" class="mb-2">
-                <h3 class="fw-bold text-primary mb-0">Daily Report</h3>
-                <small class="text-muted">for <b>{{ request.user.username }}</b></small>
+            <div class="text-start mb-5 pb-4 border-bottom">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div>
+                        <h2 class="fw-bold text-dark mb-0">Daily Report</h2>
+                        <p class="text-muted mb-0">Log your progress for today, <span class="text-primary fw-medium">{{ request.user.username }}</span></p>
+                    </div>
+                </div>
             </div>
 
-            <form method="post" class="mt-3">
+            <form method="post" class="needs-validation">
                 {% csrf_token %}
 
                 {% for field in form %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                <div class="mb-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>{{ field.label }}</span>
+                        {% if field.field.required %}<span class="text-danger small">* Required</span>{% endif %}
+                    </label>
                     {{ field }}
                     {% if field.help_text %}
-                    <div class="form-text">{{ field.help_text }}</div>
+                    <div class="form-text mt-2 opacity-75">{{ field.help_text }}</div>
                     {% endif %}
                     {% for error in field.errors %}
-                    <div class="text-danger small">{{ error }}</div>
+                    <div class="text-danger small mt-2 d-flex align-items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        {{ error }}
+                    </div>
                     {% endfor %}
                 </div>
                 {% endfor %}
 
                 {% if dynamic_fields %}
-                <h5 class="mt-4 fw-bold text-primary border-top pt-3">Additional Fields</h5>
+                <div id="dynamicFieldsSection" class="mt-5 mb-4 p-4 rounded-3"
+                    style="background-color: #f8fafc; border: 1px dashed var(--border-color);">
+                    <h5 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="text-primary">
+                            <path d="m16 6 4 14H4L8 6" />
+                            <path d="M12 2v4" />
+                            <path d="m8 2 1 2" />
+                            <path d="m16 2-1 2" />
+                            <path d="M6 20h12" />
+                            <path d="M12 10v6" />
+                            <path d="M10 12h4" />
+                        </svg>
+                        Additional Details
+                    </h5>
 
-                {% for field in dynamic_fields %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
+                    {% for field in dynamic_fields %}
+                    <div class="mb-4 last-child-mb-0">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>{{ field.label }}</span>
+                            {% if field.required %}<span class="text-muted small">Required</span>{% endif %}
+                        </label>
 
-                    {% if field.field_type == "text" %}
-                    <input type="text" name="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                        {% if field.field_type == "text" %}
+                        {% if field.required %}
+                        <input type="text" name="{{ field.name }}" class="form-control" required>
+                        {% else %}
+                        <input type="text" name="{{ field.name }}" class="form-control">
+                        {% endif %}
 
-                    {% elif field.field_type == "number" %}
-                    <input type="number" name="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                        {% elif field.field_type == "number" %}
+                        {% if field.required %}
+                        <input type="number" name="{{ field.name }}" class="form-control" required>
+                        {% else %}
+                        <input type="number" name="{{ field.name }}" class="form-control">
+                        {% endif %}
 
-                    {% elif field.field_type == "date" %}
-                    <input type="date" name="{{ field.name }}" class="form-control" {% if field.required %}required{% endif %}>
+                        {% elif field.field_type == "date" %}
+                        {% if field.required %}
+                        <input type="date" name="{{ field.name }}" class="form-control" required>
+                        {% else %}
+                        <input type="date" name="{{ field.name }}" class="form-control">
+                        {% endif %}
 
-                    {% elif field.field_type == "textarea" %}
-                    <textarea name="{{ field.name }}" rows="3" class="form-control" {% if field.required %}required{% endif %}></textarea>
+                        {% elif field.field_type == "textarea" %}
+                        {% if field.required %}
+                        <textarea name="{{ field.name }}" rows="3" class="form-control" required></textarea>
+                        {% else %}
+                        <textarea name="{{ field.name }}" rows="3" class="form-control"></textarea>
+                        {% endif %}
 
-                    {% elif field.field_type == "boolean" %}
-                    <div class="form-check">
-                        <input type="checkbox" name="{{ field.name }}" class="form-check-input">
-                        <label class="form-check-label">Yes / No</label>
+                        {% elif field.field_type == "boolean" %}
+                        <div class="form-check form-switch p-0 ps-5 mt-2">
+                            <input type="checkbox" name="{{ field.name }}" class="form-check-input" role="switch">
+                            <label class="form-check-label text-muted ms-2">Yes / No</label>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
                 {% endif %}
 
-                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold mt-3">
-                    Submit Report
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold mt-4 shadow-sm">
+                    Submit Daily Report
                 </button>
             </form>
 
@@ -87,116 +145,159 @@
     </div>
 
     <!-- ========== RIGHT: Calendar ========== -->
-    <div class="col-lg-6">
-        <div class="card p-4 shadow-sm" style="border-radius:16px;">
-            <h5 class="fw-bold mb-3">🗓️ Submission Calendar</h5>
-
-            <div class="d-flex flex-wrap gap-3">
-                <div id="prevCalendar" class="calendar-box"></div>
-                <div id="currCalendar" class="calendar-box"></div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 100px; z-index: 10;">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="fw-bold text-dark mb-0">Submission History</h5>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small">Submitted</span>
+                    <span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill small">Missing</span>
+                </div>
             </div>
 
-            <div class="mt-3">
-                <span class="badge bg-success">Submitted</span>
-                <span class="badge bg-danger">Not Submitted</span>
+            <div class="calendar-container overflow-hidden rounded-3 border">
+                <div id="currCalendar" class="p-2 bg-white"></div>
+            </div>
+
+            <div class="mt-4 p-3 rounded-3" style="background-color: #f1f5f9;">
+                <p class="small text-muted mb-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="me-1">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4" />
+                        <path d="M12 8h.01" />
+                    </svg>
+                    Click on a date to view past report details.
+                </p>
             </div>
         </div>
     </div>
 
 </div>
 
-<!-- ========= Styles ========= -->
-<style>
-    body { background: #f4f6fb !important; }
+{% endblock %}
 
-    .calendar-box {
-        background: white;
-        border-radius: 12px;
-        padding: 12px;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        flex: 1;
-        min-width: 300px;
-    }
-
-    input, textarea, select {
-        border-radius: 8px !important;
-        padding: 8px 10px !important;
-        border: 1px solid #ccc !important;
-    }
-
-    input:focus, textarea:focus, select:focus {
-        outline: none;
-        border-color: #007bff !important;
-        box-shadow: 0 0 0 2px rgba(0,123,255,0.2) !important;
-    }
-
-    .btn-success {
-        background: #009e60 !important;
-        border: none !important;
-    }
-    .btn-success:hover {
-        background: #007b4f !important;
-    }
-</style>
-
+{% block extra_head %}
 <!-- ========= FullCalendar ========= -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+<style>
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .fc-day-today {
+        background: rgba(79, 70, 229, 0.05) !important;
+    }
+
+    .fc-h-event {
+        border: none !important;
+    }
+
+    .last-child-mb-0:last-child {
+        margin-bottom: 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
+        // Toggle dynamic fields based on report_type
+        const reportTypeSelect = document.querySelector('select[name="report_type"]');
+        const dynamicSection = document.getElementById('dynamicFieldsSection');
+        const shiftRow = document.querySelector('select[name="shift"]')?.closest('.mb-4');
 
-    const submissions = JSON.parse('{{ submission_dates|escapejs }}');
-    const submittedSet = new Set(submissions);
-    const today = new Date();
-
-    // ⭐ Redirect to /my-report/<date>/
-    function handleDateClick(info) {
-        const date = info.dateStr;
-        window.location.href = "/my-report/" + date + "/";
-    }
-
-    function createCalendar(elementId, offset) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-
-        const monthDate = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-        const year = monthDate.getFullYear();
-        const month = monthDate.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        const events = [];
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateObj = new Date(year, month, d);
-            const dateStr = dateObj.toISOString().split("T")[0];
-
-            if (submittedSet.has(dateStr)) {
-                events.push({ title: "✔", start: dateStr, color: "#28a745", textColor: "white" });
-            } else if (dateObj <= today) {
-                events.push({ title: "✖", start: dateStr, color: "#dc3545", textColor: "white" });
+        if (reportTypeSelect) {
+            function toggleFields() {
+                const isLeave = reportTypeSelect.value === 'leave';
+                if (dynamicSection) dynamicSection.style.display = isLeave ? 'none' : 'block';
+                if (shiftRow) shiftRow.style.display = isLeave ? 'none' : 'block';
             }
+            reportTypeSelect.addEventListener('change', toggleFields);
+            toggleFields(); // Initial call
         }
 
-        const calendar = new FullCalendar.Calendar(el, {
-            initialView: "dayGridMonth",
-            initialDate: monthDate,
-            height: 430,
-            headerToolbar: { left: "", center: "title", right: "" },
-            events: events,
-            eventDisplay: "block",
-            fixedWeekCount: false,
-
-            // ⭐ Add Date Click
-            dateClick: handleDateClick
+        const submissionData = JSON.parse('{{ submission_data|escapejs }}');
+        const weeklyOffDjango = parseInt('{{ weekly_off }}');
+        const submittedMap = {};
+        submissionData.forEach(item => {
+            submittedMap[item.date] = item.type;
         });
 
-        calendar.render();
-    }
+        const today = new Date();
+        const todayStr = today.toISOString().split("T")[0];
 
-    createCalendar("prevCalendar", -1);
-    createCalendar("currCalendar", 0);
-});
+        function handleDateClick(info) {
+            const date = info.dateStr;
+            window.location.href = "/my-report/" + date + "/";
+        }
+
+        const calendarEl = document.getElementById('currCalendar');
+        if (calendarEl) {
+            const events = [];
+            // Show window
+            const start = new Date();
+            start.setDate(today.getDate() - 45);
+            const end = new Date();
+            end.setDate(today.getDate() + 15);
+
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split("T")[0];
+                const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon...
+                const isWeeklyOff = dayOfWeek === ((weeklyOffDjango + 1) % 7);
+
+                if (submittedMap[dateStr]) {
+                    const type = submittedMap[dateStr];
+                    let color = "#10b981"; // default green
+                    let title = "✓";
+                    
+                    if (type === 'leave') {
+                        color = "#f59e0b";
+                        title = "LEAVE";
+                    }
+
+                    events.push({
+                        title: title,
+                        start: dateStr,
+                        backgroundColor: color,
+                        textColor: "white",
+                        display: 'block'
+                    });
+                } else if (isWeeklyOff) {
+                    events.push({
+                        title: "OFF",
+                        start: dateStr,
+                        backgroundColor: "#3b82f6",
+                        textColor: "white",
+                        display: 'block'
+                    });
+                } else if (d < today) {
+                    events.push({
+                        title: "✕",
+                        start: dateStr,
+                        backgroundColor: "#ef4444",
+                        textColor: "white",
+                        display: 'block'
+                    });
+                }
+            }
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: "dayGridMonth",
+                height: 'auto',
+                headerToolbar: { left: "prev", center: "title", right: "next" },
+                events: events,
+                dateClick: handleDateClick,
+                eventDisplay: "block",
+                fixedWeekCount: false,
+            });
+
+            calendar.render();
+        }
+    });
 </script>
-
 {% endblock %}

@@ -1,78 +1,112 @@
 {% extends "base.html" %}
 
-
-{% block title %}My Report – {{ selected_date }}{% endblock %}
+{% block title %}Report: {{ selected_date }} | Report System{% endblock %}
 
 {% block content %}
-
-<div class="card p-4 shadow-sm">
-    <h3 class="mb-3 text-primary">📄 Report for {{ selected_date }}</h3>
-
-    {% if report %}
-    <table class="table table-bordered">
-        <tr>
-            <th width="25%">Date</th>
-            <td>{{ report.custom_date }}</td>
-        </tr>
-
-        <tr>
-            <th>Shift</th>
-            <td>{{ report.get_shift_display }}</td>
-        </tr>
-
-        <tr>
-            <th>Notes</th>
-            <td>{{ report.notes|default:"—" }}</td>
-        </tr>
-
-        <tr>
-            <th>Status</th>
-            <td>
-                {% if report.is_late_submission %}
-                    <span class="badge bg-danger">Late Submission</span>
-                {% else %}
-                    <span class="badge bg-success">On Time</span>
-                {% endif %}
-            </td>
-        </tr>
-    </table>
-
-    <h4 class="mt-4">📌 Tasks Completed</h4>
-
-    <ul class="list-group">
-
-        {% if report.tasks %}
-            {% for k, v in report.tasks.items %}
-            <li class="list-group-item d-flex justify-content-between">
-                <strong>{{ k|title }}</strong>
-                <span>{{ v }}</span>
-            </li>
-            {% endfor %}
-        {% else %}
-            <li class="list-group-item text-muted">No tasks recorded.</li>
-        {% endif %}
-
-        {% if dynamic_fields %}
-            {% for k, v in dynamic_fields.items %}
-            <li class="list-group-item d-flex justify-content-between">
-                <strong>{{ k }}</strong>
-                <span>{{ v }}</span>
-            </li>
-            {% endfor %}
-        {% endif %}
-
-    </ul>
-
-    <!-- Back Button Fixed -->
-    <a href="/report/" class="btn btn-secondary mt-4">⬅ Back to Submit Page</a>
-
-    {% else %}
-    <div class="alert alert-warning">
-        No report found for <strong>{{ selected_date }}</strong>.
+<div class="fade-in max-w-700 mx-auto">
+    <div class="mb-5 text-center">
+        <h1 class="fw-bold text-dark mb-1">Report Detail</h1>
+        <p class="text-muted mb-0">Submission for <span class="text-primary fw-medium">{{ selected_date }}</span></p>
     </div>
 
-    <a href="/report/" class="btn btn-primary mt-3">Submit Report</a>
-    {% endif %}
+    <div class="card border-0 shadow-sm overflow-hidden mb-4">
+        <div class="card-header bg-white pt-4 px-4 border-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Overview</h5>
+            {% if report %}
+            {% if report.is_late_submission %}
+            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 small">Late Submission</span>
+            {% else %}
+            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 small">On Time</span>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="card-body p-4">
+            {% if report %}
+            <div class="row g-4 pt-2">
+                <div class="col-sm-6">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Submission Date</label>
+                    <div class="text-dark fw-medium">{{ report.custom_date }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Shift Type</label>
+                    <div class="text-dark fw-medium">{{ report.get_shift_display }}</div>
+                </div>
+                <div class="col-12 mt-4 pt-3 border-top">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-2">Tasks Completed</label>
+                    <div class="row g-2">
+                        {% if report.tasks %}
+                        {% for k, v in report.tasks.items %}
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">{{ k|title }}</span>
+                                <span class="fw-bold text-primary">{{ v }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="col-12">
+                            <p class="text-muted small italic">No tasks recorded for this period.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if dynamic_fields %}
+                        {% for k, v in dynamic_fields.items %}
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">{{ k }}</span>
+                                <span class="fw-bold text-primary">{{ v }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% if report.notes %}
+                <div class="col-12 mt-4 pt-3 border-top">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-2">Additional Notes</label>
+                    <div class="p-3 rounded-3 bg-light text-muted small lh-lg">
+                        {{ report.notes }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% else %}
+            <div class="text-center py-5">
+                <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 64px; height: 64px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </div>
+                <h5 class="fw-bold text-dark">No Report Found</h5>
+                <p class="text-muted small mb-4">It looks like a report hasn't been submitted for this date yet.</p>
+                <a href="/report/" class="btn btn-primary px-4 fw-bold">Submit Now</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="/report/"
+            class="btn btn-link text-decoration-none text-muted small d-flex align-items-center justify-content-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back to Submission Dashboard
+        </a>
+    </div>
 </div>
 
+<style>
+    .max-w-700 {
+        max-width: 700px;
+    }
+</style>
 {% endblock %}

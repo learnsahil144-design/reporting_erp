@@ -1,11 +1,17 @@
 services:
   web:
     build: .
-    container_name: reporting_app
+    container_name: reporting_erp_app
     ports:
+<<<<<<< HEAD
       - "9001:8900"
+=======
+      - "4000:8900"
+>>>>>>> 08dda58 (feat: Redesign user detail page with charts and an enhanced report table, add comprehensive documentation, and update Docker configurations.)
     env_file:
       - .env
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy
@@ -13,7 +19,7 @@ services:
 
   db:
     image: postgres:15
-    container_name: reporting_db
+    container_name: reporting_erp_db
     restart: unless-stopped
     env_file:
       - .env

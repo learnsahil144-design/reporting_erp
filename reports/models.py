@@ -16,8 +16,18 @@ class User(AbstractUser):
         ('cameraman', 'Cameraman'),
         ('marketing', 'Marketing'),
     ]
+    DAYS_OF_WEEK = [
+        (0, 'Monday'),
+        (1, 'Tuesday'),
+        (2, 'Wednesday'),
+        (3, 'Thursday'),
+        (4, 'Friday'),
+        (5, 'Saturday'),
+        (6, 'Sunday'),
+    ]
     team = models.CharField(max_length=50, choices=TEAM_CHOICES)
     contact = models.CharField(max_length=15, blank=True, null=True)
+    weekly_off = models.IntegerField(choices=DAYS_OF_WEEK, default=6)  # Default Sunday
 
     def __str__(self):
         return self.username
@@ -37,7 +47,12 @@ class Report(models.Model):
         ('wfh', 'Work From Home'),
     ]
 
+    REPORT_TYPES = [
+        ('regular', 'Regular Working Day'),
+        ('leave', 'On Leave'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPES, default='regular')
     shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, default='9_5_30')
     date = models.DateField(auto_now_add=True, help_text="Auto submission date")
     custom_date = models.DateField(blank=True, null=True, help_text="The date this report is for")
